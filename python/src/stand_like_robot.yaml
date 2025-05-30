@@ -1,0 +1,48 @@
+general_settings:
+  baudrate: 115200
+
+motors:
+  - AX0:
+    id: 0
+    speed: 100
+    initial_position: 512 # 150 degree
+    limits:
+      position: [0, 1023] # 0 ~ 300 degree
+      velocity: 10
+  - AX1:
+    id: 1
+    speed: 100
+    initial_position: 512
+    limits:
+      position: [0, 1023]
+      velocity: 10
+  - AX2:
+    id: 2
+    speed: 100
+    initial_position: 512
+    limits:
+      position: [0, 1023]
+      velocity: 10
+  - AX3:
+    id: 3
+    speed: 100
+    initial_position: 512
+    limits:
+      position: [0, 1023]
+      velocity: 10
+  - XC1:
+    id: 4
+    speed: 600
+    initial_position: 2048 # 180 degree
+    limits:
+      position: [0, 4095] # 0 ~ 360 degree
+      velocity: 10
+  - XC2:
+    id: 5
+    speed: 600
+    initial_position: 2048
+    limits:
+      position: [0, 4095]
+      velocity: 10
+
+link:
