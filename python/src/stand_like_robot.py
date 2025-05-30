@@ -79,7 +79,8 @@ class StandLikeRobot:
         for motor_id, motor_controller in enumerate(self.motor_controllers):
             motor_controller.move(position=self.init_joint_positions[motor_id])
 
-            
+    # move를 감싸서 tarjectory planning을 하는 함수
+    def 
             
             
             
