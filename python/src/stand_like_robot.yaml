@@ -1,48 +1,118 @@
 general_settings:
   baudrate: 115200
+  motor_specs:
+    AX:
+      max_rpm: 59 # AX-12A maximum RPM
+      position_range: 1023 # 10-bit resolution
+      degree_range: 300 # degrees
+      max_velocity: 1208 # steps per second
+    XC:
+      max_rpm: 97 # XC-330 maximum RPM
+      position_range: 4095 # 12-bit resolution
+      degree_range: 360 # degrees
+      max_velocity: 1987 # steps per second
 
 motors:
   - AX0:
     id: 0
     speed: 100
     initial_position: 512 # 150 degree
-    limits:
-      position: [0, 1023] # 0 ~ 300 degree
-      velocity: 10
   - AX1:
     id: 1
     speed: 100
     initial_position: 512
-    limits:
-      position: [0, 1023]
-      velocity: 10
   - AX2:
     id: 2
     speed: 100
     initial_position: 512
-    limits:
-      position: [0, 1023]
-      velocity: 10
   - AX3:
     id: 3
     speed: 100
     initial_position: 512
-    limits:
-      position: [0, 1023]
-      velocity: 10
   - XC1:
     id: 4
     speed: 600
     initial_position: 2048 # 180 degree
-    limits:
-      position: [0, 4095] # 0 ~ 360 degree
-      velocity: 10
   - XC2:
     id: 5
     speed: 600
     initial_position: 2048
-    limits:
-      position: [0, 4095]
-      velocity: 10
 
-link:
+links:
+  - name: "base_link"
+    type: "fixed"
+    transform:
+      xyz: [0, 0, 0]
+      rpy: [0, 0, 0]
+
+  - name: "link1"
+    type: "revolute"
+    joint: "AX0"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.0 # link length
+      alpha: 90 # link twist
+    mass: 0.1 # kg
+    com: [0, 0, 0.05] # center of mass
+    inertia: [0.001, 0.001, 0.001] # moment of inertia
+
+  - name: "link2"
+    type: "revolute"
+    joint: "AX1"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.1 # link length
+      alpha: 0 # link twist
+    mass: 0.1
+    com: [0.05, 0, 0]
+    inertia: [0.001, 0.001, 0.001]
+
+  - name: "link3"
+    type: "revolute"
+    joint: "AX2"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.1 # link length
+      alpha: 0 # link twist
+    mass: 0.1
+    com: [0.05, 0, 0]
+    inertia: [0.001, 0.001, 0.001]
+
+  - name: "link4"
+    type: "revolute"
+    joint: "AX3"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.1 # link length
+      alpha: 0 # link twist
+    mass: 0.1
+    com: [0.05, 0, 0]
+    inertia: [0.001, 0.001, 0.001]
+
+  - name: "link5"
+    type: "revolute"
+    joint: "XC1"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.1 # link length
+      alpha: 0 # link twist
+    mass: 0.1
+    com: [0.05, 0, 0]
+    inertia: [0.001, 0.001, 0.001]
+
+  - name: "end_effector"
+    type: "revolute"
+    joint: "XC2"
+    dh_params:
+      theta: 0 # joint angle (variable)
+      d: 0.0 # link offset
+      a: 0.05 # link length
+      alpha: 0 # link twist
+    mass: 0.05
+    com: [0.025, 0, 0]
+    inertia: [0.0005, 0.0005, 0.0005]
