@@ -393,17 +393,24 @@ class StandLikeRobot:
         if not hasattr(self, 'motor_dependency_map') or not self.motor_dependency_map:
             # No mapping, assume same order
             return kinematics_joint_radians
-        
+
         # Initialize with current motor positions
         motor_joint_radians = list(self.get_current_joint_radians())
-        
-        # Update only the motors that correspond to kinematics joints
-        for joint_idx, motor_idx in enumerate(self.motor_dependency_map):
-            if (motor_idx is not None and 
-                joint_idx < len(kinematics_joint_radians) and 
+
+        # Determine unique motor indices used by the kinematic solver
+        unique_motor_indices = []
+        for motor_idx in self.motor_dependency_map:
+            if motor_idx is not None and motor_idx not in unique_motor_indices:
+                unique_motor_indices.append(motor_idx)
+
+        unique_motor_indices.sort()
+
+        # Map kinematic order back to motor order
+        for kinematic_idx, motor_idx in enumerate(unique_motor_indices):
+            if (kinematic_idx < len(kinematics_joint_radians) and
                 motor_idx < len(motor_joint_radians)):
-                motor_joint_radians[motor_idx] = kinematics_joint_radians[joint_idx]
-        
+                motor_joint_radians[motor_idx] = kinematics_joint_radians[kinematic_idx]
+
         return motor_joint_radians
 
     def move_to_joint_radians(self, joint_radians, time_to_go=2.0):
@@ -476,12 +483,17 @@ class StandLikeRobot:
         return self.convert_motor_to_kinematics_order(all_joint_radians)
 
     def get_max_velocities(self):
-        """Get maximum velocities for each motor from metadata"""
+        """Get maximum velocities for each motor in rad/s"""
         max_velocities = []
         for motor in self.metadata['motors']:
             motor_name = list(motor.keys())[0]
             motor_type = motor_name[:2]  # 'AX' or 'XC'
-            max_velocities.append(self.metadata['general_settings']['motor_specs'][motor_type]['max_velocity'])
+
+            specs = self.metadata['general_settings']['motor_specs'][motor_type]
+            steps_per_sec = specs['max_velocity']
+            rad_per_step = specs['rad_range'] / specs['position_range']
+            max_velocities.append(steps_per_sec * rad_per_step)
+
         return max_velocities
 
     def get_current_cartesian_position(self):
