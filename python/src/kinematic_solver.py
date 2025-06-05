@@ -7,22 +7,45 @@ import numpy as np
 from math import pi
 
 class KinematicSolver:
-    def __init__(self, dh_params_list):
+    def __init__(self, dh_params_list, joint_limits=None, motor_dependency_map=None):
         """
         Initialize kinematic solver with DH parameters
         Args:
-            dh_params_list: List of dictionaries containing DH parameters for each link
+            dh_params_list: List of dictionaries containing DH parameters for each transformation
                 Each dict should have: a, alpha, d, theta
+            joint_limits: Optional list of (min, max) tuples for joint limits in radians
+            motor_dependency_map: Optional list mapping each transformation to a motor index
+                None values indicate fixed transformations
         """
         self.dh_params = dh_params_list
         self.num_links = len(dh_params_list)
+        self.motor_dependency_map = motor_dependency_map or list(range(self.num_links))
+        
+        # Determine number of actual motor variables
+        self.num_motor_variables = 0
+        if motor_dependency_map:
+            motor_indices = [idx for idx in motor_dependency_map if idx is not None]
+            self.num_motor_variables = max(motor_indices) + 1 if motor_indices else 0
+        else:
+            self.num_motor_variables = self.num_links
+        
+        # Joint limits in radians
+        if joint_limits is None:
+            # Default limits: -π to π for all transformations
+            self.joint_limits = [(-np.pi, np.pi)] * self.num_links
+        else:
+            self.joint_limits = joint_limits
+            
+        # Compatibility with old interface
+        self.n_joints = self.num_motor_variables
 
     def _dh_transform(self, theta, d, a, alpha):
         """Calculate transformation matrix for a single link"""
-        cos_theta = np.cos(np.deg2rad(theta))
-        sin_theta = np.sin(np.deg2rad(theta))
-        cos_alpha = np.cos(np.deg2rad(alpha))
-        sin_alpha = np.sin(np.deg2rad(alpha))
+        # theta and alpha should be in radians already
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+        cos_alpha = np.cos(alpha)
+        sin_alpha = np.sin(alpha)
         
         return np.array([
             [cos_theta, -sin_theta*cos_alpha, sin_theta*sin_alpha, a*cos_theta],
@@ -31,37 +54,66 @@ class KinematicSolver:
             [0, 0, 0, 1]
         ])
 
-    def forward_kinematics(self, joint_positions):
+    def _create_transformation_matrix(self, theta, d, a, alpha):
         """
-        Calculate end-effector position using forward kinematics
+        Alias for _dh_transform for compatibility with visualization code
+        Create DH transformation matrix
         Args:
-            joint_positions: List of joint angles in radians
+            theta: Joint angle (radians)
+            d: Link offset
+            a: Link length  
+            alpha: Link twist (radians)
+        Returns:
+            4x4 transformation matrix
+        """
+        return self._dh_transform(theta, d, a, alpha)
+
+    def forward_kinematics(self, joint_radians):
+        """
+        Calculate forward kinematics
+        Args:
+            joint_radians: Array of motor variables (length = num_motor_variables)
         Returns:
             End-effector position [x, y, z] and orientation [roll, pitch, yaw]
         """
-        if len(joint_positions) != self.num_links:
-            raise ValueError(f"Expected {self.num_links} joint positions, got {len(joint_positions)}")
+        if len(joint_radians) != self.num_motor_variables:
+            raise ValueError(f"Expected {self.num_motor_variables} motor variables, got {len(joint_radians)}")
 
         # Initialize transformation matrix
         T = np.eye(4)
         
-        # Calculate forward kinematics
-        for i, (params, theta) in enumerate(zip(self.dh_params, joint_positions)):
-            # Update theta in DH parameters
-            params['theta'] = theta
-            # Calculate transformation matrix for this link
-            Ti = self._dh_transform(
-                params['theta'],
-                params['d'],
-                params['a'],
-                params['alpha']
+        # Apply each DH transformation
+        for i, dh in enumerate(self.dh_params):
+            # Get the motor variable for this transformation
+            motor_idx = self.motor_dependency_map[i]
+            
+            if motor_idx is not None:
+                # Variable transformation - get angle from motor variable
+                joint_angle = joint_radians[motor_idx]
+            else:
+                # Fixed transformation - use 0 as base angle
+                joint_angle = 0.0
+            
+            # Calculate actual theta including DH offset
+            theta = joint_angle + np.radians(dh['theta'])
+            
+            # Create transformation matrix for this link
+            T_link = self._dh_transform(
+                theta=theta,
+                d=dh['d'],
+                a=dh['a'], 
+                alpha=np.radians(dh['alpha'])
             )
+            
             # Multiply transformations
-            T = T @ Ti
-
-        # Extract position and orientation
-        position = T[:3, 3]
-        orientation = self._matrix_to_euler(T[:3, :3])
+            T = T @ T_link
+        
+        # Extract position (convert to cm for consistency)
+        position = T[:3, 3] * 100  # Convert from meters to cm
+        
+        # Extract orientation (convert rotation matrix to RPY)
+        R = T[:3, :3]
+        orientation = self._matrix_to_euler(R)
         
         return position, orientation
 
@@ -76,92 +128,281 @@ class KinematicSolver:
         """
         Calculate joint angles using inverse kinematics
         Args:
-            target_position: Desired end-effector position [x, y, z]
-            target_orientation: Optional desired orientation [roll, pitch, yaw] in degrees
-            initial_guess: Optional initial guess for joint angles
+            target_cartesian_positions: Desired end-effector [x, y, z, roll, pitch, yaw] or [x, y, z]
+            seed: Optional initial guess for joint angles
         Returns:
-            Joint angles in degrees
+            Joint angles in radians
         """
         if seed is None:
-            seed = np.zeros(self.num_links)
+            seed = np.zeros(self.num_motor_variables)
         
-        # Levenberg Method
-        max_iter = 100
-        step_size = 0.1
-        tolerance = 1e-3
+        # Check if target is potentially reachable
+        target_pos = target_cartesian_positions[:3]
+        max_reach = sum([abs(params['a']) for params in self.dh_params]) + sum([abs(params['d']) for params in self.dh_params])
+        target_distance = np.linalg.norm(target_pos)
         
-        current_joint_degrees = seed.copy()
+        if target_distance > max_reach:
+            print(f"Warning: Target may be unreachable. Distance: {target_distance:.1f}, Max reach: {max_reach:.1f}")
         
-        for _ in range(max_iter):
+        # Try multiple seeds if first attempt fails
+        seed_attempts = [
+            seed,
+            np.zeros(self.num_motor_variables),
+            np.random.uniform(-np.pi/4, np.pi/4, self.num_motor_variables),
+            np.random.uniform(-np.pi/2, np.pi/2, self.num_motor_variables)
+        ]
+        
+        best_result = None
+        best_error = float('inf')
+        
+        for attempt, current_seed in enumerate(seed_attempts):
+            result = self._solve_ik_single_attempt(target_cartesian_positions, current_seed)
+            
+            # Evaluate the result
+            test_pos, test_orient = self.forward_kinematics(result)
+            if len(target_cartesian_positions) >= 6:
+                pos_error = np.linalg.norm(test_pos - target_cartesian_positions[:3])
+                orient_error = np.linalg.norm(test_orient - target_cartesian_positions[3:6])
+                total_error = pos_error + orient_error
+            else:
+                total_error = np.linalg.norm(test_pos - target_cartesian_positions[:3])
+            
+            if total_error < best_error:
+                best_error = total_error
+                best_result = result
+                
+            # If we found a good solution, stop
+            if total_error < 0.1:  # Good enough threshold
+                print(f"IK converged on attempt {attempt+1} with error: {total_error:.6f}")
+                break
+        
+        if best_error > 1.0:  # Still poor convergence
+            print(f"Warning: IK convergence poor. Best error: {best_error:.6f}")
+        
+        return best_result
+    
+    def _solve_ik_single_attempt(self, target_cartesian_positions, seed):
+        """Single IK solving attempt with improved parameters"""
+        # Improved parameters for better convergence
+        max_iter = 200  # Fewer iterations per attempt
+        step_size = 0.05  # Smaller step size for stability
+        tolerance = 5e-4  # Tighter tolerance
+        
+        current_joint_radians = seed.copy()
+        prev_error_norm = float('inf')
+        
+        for iteration in range(max_iter):
             # Calculate current position
-            current_pos, current_orient = self.forward_kinematics(current_joint_degrees)
+            current_pos, current_orient = self.forward_kinematics(current_joint_radians)
             
             # Calculate position error
             pos_error = target_cartesian_positions[:3] - current_pos
-            # Calculate orientation error
-            orient_error = target_cartesian_positions[3:] - current_orient
-            # Normalize orientation error to [-pi, pi]
-            orient_error = np.arctan2(np.sin(orient_error), np.cos(orient_error))
-            # Combine position and orientation errors (6D error)
-            error = np.concatenate([pos_error, orient_error])
             
-            # Check if we've reached the target
-            if np.linalg.norm(error) < tolerance:
+            # Calculate orientation error (handle 6D vs 3D cases)
+            if len(target_cartesian_positions) >= 6:
+                orient_error = target_cartesian_positions[3:6] - current_orient
+                # Normalize orientation error to [-pi, pi]
+                orient_error = np.arctan2(np.sin(orient_error), np.cos(orient_error))
+                # Combine position and orientation errors with different weights
+                error = np.concatenate([pos_error, 0.1 * orient_error])  # Weight orientation less
+            else:
+                # Position-only IK (3D)
+                error = pos_error
+            
+            # Check convergence
+            error_norm = np.linalg.norm(error)
+            if error_norm < tolerance:
                 break
                 
+            # Check if error is increasing (diverging)
+            if error_norm > prev_error_norm * 2.0 and iteration > 20:
+                step_size *= 0.8  # Reduce step size
+                if step_size < 1e-5:
+                    break
+            
+            prev_error_norm = error_norm
+                
             # Calculate Jacobian
-            J = self._calculate_jacobian(current_joint_degrees)
+            J = self._calculate_jacobian(current_joint_radians)
             
-            # Method 1: Simple Transpose Method (JT)
-            # This is the basic gradient descent approach
-            # delta_angles = step_size * J.T @ error
+            # Use appropriate Jacobian size based on error dimension
+            if len(error) == 3:  # Position-only
+                J = J[:3, :]  # Use only position part of Jacobian
+            elif len(error) == 6:  # Position + orientation with weights
+                J[3:, :] *= 0.1  # Weight orientation jacobian less
             
-            # Method 2: Levenberg Method
-            # This is a modification of the Gauss-Newton method
-            # Uses damping factor with identity matrix to improve stability
-            # (J^T * J + λI) * Δθ = J^T * e
-            damping = 0.1  # λ (lambda) is the damping factor
-            JTJ = J.T @ J
-            delta_angles = step_size * J.T @ np.linalg.solve(JTJ + damping * np.eye(JTJ.shape[0]), error)
+            # Adaptive damping based on error
+            damping = 0.001 + 0.01 * min(error_norm, 1.0)
             
-            current_joint_degrees += delta_angles
+            try:
+                # Moore-Penrose pseudoinverse with damping
+                JTJ = J.T @ J
+                if JTJ.shape[0] > 0:
+                    delta_joint_radians = step_size * np.linalg.solve(
+                        JTJ + damping * np.eye(JTJ.shape[0]), 
+                        J.T @ error
+                    )
+                else:
+                    delta_joint_radians = np.zeros(self.num_motor_variables)
+            except np.linalg.LinAlgError:
+                # Fallback to simple transpose method if matrix is singular
+                delta_joint_radians = step_size * 0.01 * J.T @ error
             
-            # Keep angles in valid range
-            current_joint_degrees = np.clip(current_joint_degrees, -pi, pi)
+            # Limit the step size to prevent large jumps
+            max_step = 0.1  # Smaller maximum change per iteration
+            delta_norm = np.linalg.norm(delta_joint_radians)
+            if delta_norm > max_step:
+                delta_joint_radians = delta_joint_radians * (max_step / delta_norm)
+            
+            # Update joint angles
+            current_joint_radians += delta_joint_radians
+            
+            # Apply joint limits
+            for i, (min_limit, max_limit) in enumerate(self.joint_limits):
+                current_joint_radians[i] = np.clip(current_joint_radians[i], min_limit, max_limit)
         
-        return np.rad2deg(current_joint_degrees)
+        return current_joint_radians
 
-    def _calculate_jacobian(self, joint_angles):
-        """Calculate the geometric Jacobian matrix"""
-        J = np.zeros((6, self.num_links))
-        T = np.eye(4)
+    def _calculate_jacobian(self, joint_radians):
+        """Calculate the geometric Jacobian matrix using numerical differentiation"""
+        epsilon = 1e-6
+        J = np.zeros((6, self.num_motor_variables))
         
-        for i in range(self.num_links):
-            # Calculate transformation up to current joint
-            for j in range(i):
-                params = self.dh_params[j].copy()
-                params['theta'] = joint_angles[j]
-                Tj = self._dh_transform(
-                    params['a'],
-                    params['alpha'],
-                    params['d'],
-                    params['theta']
-                )
-                T = T @ Tj
+        # Get current end-effector pose
+        pos0, orient0 = self.forward_kinematics(joint_radians)
+        
+        for i in range(self.num_motor_variables):
+            # Perturb joint i
+            joint_radians_plus = joint_radians.copy()
+            joint_radians_plus[i] += epsilon
             
-            # Get z-axis of current joint
-            z_axis = T[:3, 2]
+            joint_radians_minus = joint_radians.copy()
+            joint_radians_minus[i] -= epsilon
             
-            # Get position of end-effector
-            end_pos = self.forward_kinematics(joint_angles)[0]
+            # Calculate forward kinematics for perturbed joints
+            pos_plus, orient_plus = self.forward_kinematics(joint_radians_plus)
+            pos_minus, orient_minus = self.forward_kinematics(joint_radians_minus)
             
-            # Get position of current joint
-            joint_pos = T[:3, 3]
-            
-            # Calculate linear and angular components
-            J[:3, i] = np.cross(z_axis, end_pos - joint_pos)
-            J[3:, i] = z_axis
-            
-            T = np.eye(4)
+            # Numerical differentiation
+            J[:3, i] = (pos_plus - pos_minus) / (2 * epsilon)
+            J[3:, i] = (orient_plus - orient_minus) / (2 * epsilon)
         
         return J
+
+
+def main():
+    """Test function for KinematicSolver"""
+    print("=== Testing KinematicSolver ===")
+    
+    # More realistic DH parameters for a 6-DOF robot arm
+    dh_params = [
+        {'a': 0, 'alpha': 0, 'd': 15, 'theta': 0},      # Base joint
+        {'a': 0, 'alpha': 90, 'd': 0, 'theta': 0},      # Shoulder joint
+        {'a': 20, 'alpha': 0, 'd': 0, 'theta': 0},      # Upper arm
+        {'a': 15, 'alpha': 0, 'd': 0, 'theta': 0},      # Forearm
+        {'a': 0, 'alpha': 90, 'd': 0, 'theta': 0},      # Wrist pitch
+        {'a': 0, 'alpha': 0, 'd': 5, 'theta': 0}        # Wrist roll
+    ]
+    
+    # Initialize solver
+    solver = KinematicSolver(dh_params)
+    print(f"Initialized solver with {solver.num_motor_variables} links")
+    
+    # Test 1: Forward kinematics with zero angles
+    print("\n--- Test 1: Forward Kinematics (Zero Position) ---")
+    joint_radians_zero = np.zeros(6)
+    position_zero, orientation_zero = solver.forward_kinematics(joint_radians_zero)
+    print(f"Joint angles (rad): {joint_radians_zero}")
+    print(f"End-effector position (cm): {position_zero}")
+    print(f"End-effector orientation (rad): {orientation_zero}")
+    print(f"End-effector orientation (deg): {np.rad2deg(orientation_zero)}")
+    
+    # Test 2: Forward kinematics with small angles
+    print("\n--- Test 2: Forward Kinematics (Small Angles) ---")
+    joint_radians_small = np.array([0.1, 0.2, 0.15, 0.1, 0.05, 0.1])
+    position_small, orientation_small = solver.forward_kinematics(joint_radians_small)
+    print(f"Joint angles (rad): {joint_radians_small}")
+    print(f"Joint angles (deg): {np.rad2deg(joint_radians_small)}")
+    print(f"End-effector position (cm): {position_small}")
+    print(f"End-effector orientation (rad): {orientation_small}")
+    print(f"End-effector orientation (deg): {np.rad2deg(orientation_small)}")
+    
+    # Test 3: Position-only inverse kinematics (3D)
+    print("\n--- Test 3: Position-Only Inverse Kinematics ---")
+    target_position = np.array([30.0, 5.0, 15.0])  # More reachable target
+    print(f"Target position: {target_position}")
+    
+    solved_radians_3d = solver.inverse_kinematics(target_position, seed=np.zeros(6))
+    print(f"Solved joint angles (rad): {solved_radians_3d}")
+    print(f"Solved joint angles (deg): {np.rad2deg(solved_radians_3d)}")
+    
+    # Verify the solution
+    verify_position_3d, _ = solver.forward_kinematics(solved_radians_3d)
+    print(f"Verification position: {verify_position_3d}")
+    
+    position_error_3d = np.linalg.norm(target_position - verify_position_3d)
+    print(f"Position error: {position_error_3d:.6f} cm")
+    
+    # Test 4: Full 6D inverse kinematics
+    print("\n--- Test 4: Full 6D Inverse Kinematics ---")
+    target_cartesian_6d = np.concatenate([position_small, orientation_small])
+    print(f"Target 6D pose: {target_cartesian_6d}")
+    
+    solved_radians_6d = solver.inverse_kinematics(target_cartesian_6d, seed=np.zeros(6))
+    print(f"Solved joint angles (rad): {solved_radians_6d}")
+    print(f"Solved joint angles (deg): {np.rad2deg(solved_radians_6d)}")
+    
+    # Verify the solution
+    verify_position_6d, verify_orientation_6d = solver.forward_kinematics(solved_radians_6d)
+    verify_cartesian_6d = np.concatenate([verify_position_6d, verify_orientation_6d])
+    print(f"Verification 6D pose: {verify_cartesian_6d}")
+    
+    pose_error_6d = np.linalg.norm(target_cartesian_6d - verify_cartesian_6d)
+    print(f"6D pose error: {pose_error_6d:.6f}")
+    
+    # Test 5: Multiple position targets
+    print("\n--- Test 5: Multiple Target Test ---")
+    test_targets = [
+        np.array([32.0, 0.0, 12.0]),     # Forward reach
+        np.array([28.0, 8.0, 18.0]),     # Side reach  
+        np.array([25.0, -5.0, 8.0]),     # Low reach
+    ]
+    
+    for i, target in enumerate(test_targets):
+        print(f"\nTarget {i+1}: {target}")
+        try:
+            solved = solver.inverse_kinematics(target, seed=np.zeros(6))
+            verify_pos, _ = solver.forward_kinematics(solved)
+            error = np.linalg.norm(target - verify_pos)
+            print(f"  Solved angles (deg): {np.rad2deg(solved)}")
+            print(f"  Position error: {error:.6f} cm")
+            print(f"  Success: {'Yes' if error < 0.1 else 'No'}")
+        except Exception as e:
+            print(f"  Failed: {e}")
+    
+    # Test 6: Workspace analysis
+    print("\n--- Test 6: Workspace Analysis ---")
+    workspace_angles = [
+        np.array([0, 0, 0, 0, 0, 0]),
+        np.array([0.5, 0, 0, 0, 0, 0]),
+        np.array([0, 0.5, 0, 0, 0, 0]),
+        np.array([0, 0, 0.5, 0, 0, 0]),
+        np.array([0.2, 0.3, -0.2, 0.1, 0, 0]),
+    ]
+    
+    positions = []
+    for angles in workspace_angles:
+        pos, _ = solver.forward_kinematics(angles)
+        positions.append(pos)
+        print(f"Angles {np.rad2deg(angles)[:3]}° -> Position {pos}")
+    
+    # Calculate workspace extent
+    positions = np.array(positions)
+    workspace_size = np.ptp(positions, axis=0)  # Range in each dimension
+    print(f"Workspace extent (cm): X={workspace_size[0]:.1f}, Y={workspace_size[1]:.1f}, Z={workspace_size[2]:.1f}")
+    
+    print("\n=== KinematicSolver Testing Complete ===")
+
+
+if __name__ == "__main__":
+    main()

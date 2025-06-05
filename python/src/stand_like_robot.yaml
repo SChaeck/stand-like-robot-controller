@@ -5,38 +5,76 @@ general_settings:
       max_rpm: 59 # AX-12A maximum RPM
       position_range: 1023 # 10-bit resolution
       degree_range: 300 # degrees
+      rad_range: 5.235987755982989 # radians
       max_velocity: 1208 # steps per second
     XC:
       max_rpm: 97 # XC-330 maximum RPM
       position_range: 4095 # 12-bit resolution
       degree_range: 360 # degrees
+      rad_range: 6.283185307179586 # radians
       max_velocity: 1987 # steps per second
 
 motors:
   - AX0:
-    id: 0
-    speed: 100
-    initial_position: 512 # 150 degree
+      id: 0
+      speed: 100
+      initial_position: 512 # 150 degree
+      initial_degree: 150 # degrees
+      initial_rad: 2.617993877991494 # radians
+      limit_degree_min: 0 # degrees
+      limit_degree_max: 300 # degrees
+      limit_rad_min: 0.0 # radians
+      limit_rad_max: 5.235987755982989 # radians
   - AX1:
-    id: 1
-    speed: 100
-    initial_position: 512
+      id: 1
+      speed: 100
+      initial_position: 512
+      initial_degree: 150 # degrees
+      initial_rad: 2.617993877991494 # radians
+      limit_degree_min: 0 # degrees
+      limit_degree_max: 150 # degrees
+      limit_rad_min: 0.0 # radians
+      limit_rad_max: 2.617993877991494 # radians
   - AX2:
-    id: 2
-    speed: 100
-    initial_position: 512
+      id: 2
+      speed: 100
+      initial_position: 512
+      initial_degree: 150 # degrees
+      initial_rad: 2.617993877991494 # radians
+      limit_degree_min: 150 # degrees
+      limit_degree_max: 300 # degrees
+      limit_rad_min: 2.617993877991494 # radians
+      limit_rad_max: 5.235987755982989 # radians
   - AX3:
-    id: 3
-    speed: 100
-    initial_position: 512
+      id: 3
+      speed: 100
+      initial_position: 512
+      initial_degree: 150 # degrees
+      initial_rad: 2.617993877991494 # radians
+      limit_degree_min: 0 # degrees
+      limit_degree_max: 300 # degrees
+      limit_rad_min: 0.0 # radians
+      limit_rad_max: 5.235987755982989 # radians
   - XC1:
-    id: 4
-    speed: 600
-    initial_position: 2048 # 180 degree
+      id: 4
+      speed: 600
+      initial_position: 2048 # 180 degree
+      initial_degree: 180 # degrees
+      initial_rad: 3.141592653589793 # radians
+      limit_degree_min: 100 # degrees (gripper theta)
+      limit_degree_max: 260 # degrees
+      limit_rad_min: 1.7453292519943295 # radians
+      limit_rad_max: 4.537856055185257 # radians
   - XC2:
-    id: 5
-    speed: 600
-    initial_position: 2048
+      id: 5
+      speed: 600
+      initial_position: 2048
+      initial_degree: 180 # degrees
+      initial_rad: 3.141592653589793 # radians
+      limit_degree_min: 100 # degrees (gripper theta)
+      limit_degree_max: 260 # degrees
+      limit_rad_min: 1.7453292519943295 # radians
+      limit_rad_max: 4.537856055185257 # radians
 
 links:
   - name: "base_link"
@@ -45,74 +83,92 @@ links:
       xyz: [0, 0, 0]
       rpy: [0, 0, 0]
 
+  # Link 0-1: theta1 (AX0)
   - name: "link1"
     type: "revolute"
-    joint: "AX0"
+    joint: "AX0" # theta1
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.0 # link length
-      alpha: 90 # link twist
-    mass: 0.1 # kg
-    com: [0, 0, 0.05] # center of mass
-    inertia: [0.001, 0.001, 0.001] # moment of inertia
+      theta: 0 # theta1 (variable, controlled by AX0)
+      d: 0.017 # 17mm converted to meters
+      a: 0.0 # 0mm
+      alpha: 90 # 90 degrees
+    mass: 0.1
+    com: [0, 0, 0.01]
+    inertia: [0.001, 0.001, 0.001]
 
+  # Link 1-2: 90+theta2 (AX1, negative direction)
   - name: "link2"
     type: "revolute"
-    joint: "AX1"
+    joint: "AX1" # theta2 dependency
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.1 # link length
-      alpha: 0 # link twist
+      theta: 90 # 90 + theta2 (theta2 is negative per your note)
+      d: 0.0 # 0mm
+      a: 0.015 # 15mm converted to meters
+      alpha: 0 # 0 degrees
     mass: 0.1
-    com: [0.05, 0, 0]
+    com: [0, 0, 0.01]
     inertia: [0.001, 0.001, 0.001]
 
+  # Link 2-3: -90-theta2 (depends on AX1, same motor as link2)
   - name: "link3"
-    type: "revolute"
-    joint: "AX2"
+    type: "dependent"
+    depends_on: "AX1" # Same motor as link2
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.1 # link length
-      alpha: 0 # link twist
-    mass: 0.1
-    com: [0.05, 0, 0]
-    inertia: [0.001, 0.001, 0.001]
+      theta: -90 # -90 - theta2 (theta2 is negative)
+      d: 0.0 # 0mm
+      a: 0.0107 # 10.7mm converted to meters
+      alpha: 0 # 0 degrees
+    mass: 0.05
+    com: [0, 0, 0.005]
+    inertia: [0.0005, 0.0005, 0.0005]
 
+  # Link 3-4: -90+theta3 (AX2, positive direction)
   - name: "link4"
     type: "revolute"
-    joint: "AX3"
+    joint: "AX2" # theta3 dependency
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.1 # link length
-      alpha: 0 # link twist
+      theta: -90 # -90 + theta3 (theta3 is positive per your note)
+      d: 0.0 # 0mm
+      a: 0.015 # 15mm converted to meters
+      alpha: 0 # 0 degrees
     mass: 0.1
-    com: [0.05, 0, 0]
+    com: [0, 0, 0.01]
     inertia: [0.001, 0.001, 0.001]
 
+  # Link 4-5: -theta3 (depends on AX2, same motor as link4)
   - name: "link5"
-    type: "revolute"
-    joint: "XC1"
+    type: "dependent"
+    depends_on: "AX2" # Same motor as link4
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.1 # link length
-      alpha: 0 # link twist
-    mass: 0.1
-    com: [0.05, 0, 0]
-    inertia: [0.001, 0.001, 0.001]
+      theta: 0 # -theta3
+      d: 0.0 # 0mm
+      a: 0.0 # 0mm
+      alpha: -90 # -90 degrees
+    mass: 0.05
+    com: [0, 0, 0.005]
+    inertia: [0.0005, 0.0005, 0.0005]
 
+  # Link 5-6: -90 (fixed transformation)
+  - name: "link6"
+    type: "fixed_revolute"
+    dh_params:
+      theta: -90 # Fixed -90 degrees
+      d: 0.0 # 0mm
+      a: 0.0 # 0mm
+      alpha: -90 # -90 degrees
+    mass: 0.05
+    com: [0, 0, 0.005]
+    inertia: [0.0005, 0.0005, 0.0005]
+
+  # Link 6-7: -90+theta4 (AX3)
   - name: "end_effector"
     type: "revolute"
-    joint: "XC2"
+    joint: "AX3" # theta4
     dh_params:
-      theta: 0 # joint angle (variable)
-      d: 0.0 # link offset
-      a: 0.05 # link length
-      alpha: 0 # link twist
-    mass: 0.05
-    com: [0.025, 0, 0]
-    inertia: [0.0005, 0.0005, 0.0005]
+      theta: -90 # -90 + theta4
+      d: 0.015 # 15mm converted to meters
+      a: 0.0 # 0mm
+      alpha: 0 # 0 degrees
+    mass: 0.1
+    com: [0, 0, 0.01]
+    inertia: [0.001, 0.001, 0.001]
