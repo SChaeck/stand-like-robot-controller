@@ -1,0 +1,61 @@
+[
+  {
+    "type": "move",
+    "pos": [
+      25.0,
+      0.0,
+      20.0
+    ],
+    "rot": 90.0,
+    "time": 2.0
+  },
+  {
+    "type": "gripper",
+    "open": true
+  },
+  {
+    "type": "move",
+    "pos": [
+      25.0,
+      0.0,
+      17.0
+    ],
+    "rot": 90.0,
+    "time": 2.0
+  },
+  {
+    "type": "gripper",
+    "open": false
+  },
+  {
+    "type": "move",
+    "pos": [
+      15.0,
+      -15.0,
+      30.0
+    ],
+    "rot": 90.0,
+    "time": 2.0
+  },
+  {
+    "type": "move",
+    "pos": [
+      15.0,
+      -15.0,
+      17.0
+    ],
+    "rot": 90.0,
+    "time": 2.0
+  },
+  {
+    "type": "gripper",
+    "open": true
+  },
+  {
+    "type": "home"
+  },
+  {
+    "type": "gripper",
+    "open": false
+  }
+]

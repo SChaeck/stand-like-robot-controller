@@ -1,0 +1,90 @@
+general_settings:
+  baudrate: 115200
+  motor_specs:
+    AX:
+      max_rpm: 59
+      position_range: 1023
+      degree_range: 300
+      rad_range: 5.235987755982989
+      max_velocity: 30
+    XC:
+      max_rpm: 97
+      position_range: 4095
+      degree_range: 360
+      rad_range: 6.283185307179586
+      max_velocity: 50
+
+# 로봇 팔 움직임용 모터 (4개)
+arm_motors:
+  - AX0: # Base rotation (초기 각도는 X 축에 평행한 각도)
+      id: 0
+      hw_initial_position: 511
+      hw_initial_degree: 150
+      sw_initial_degree: 0
+      sw_initial_rad: 0
+      sw_limit_degree_min: -150
+      sw_limit_degree_max: 150
+      sw_limit_rad_min: -2.617993877991494
+      sw_limit_rad_max: 2.617993877991494
+  - AX1: # Shoulder pitch (초기 각도는 팔을 지평에 수직으로 들어올린 각도)
+      id: 1
+      hw_initial_position: 477
+      hw_initial_degree: 140
+      sw_initial_degree: 90
+      sw_initial_rad: 1.5707963267948966
+      sw_limit_degree_min: 0
+      sw_limit_degree_max: 90
+      sw_limit_rad_min: 0
+      sw_limit_rad_max: 1.5707963267948966
+  - AX2: # Elbow pitch (팔꿈치 - 범위 확장으로 더 많은 위치 도달 가능; 초기 각도는 팔을 앞으로 쭉 뻗은 각도)
+      id: 2
+      hw_initial_position: 546
+      hw_initial_degree: 160
+      sw_initial_degree: -90
+      sw_initial_rad: -1.5707963267948966
+      sw_limit_degree_min: -90
+      sw_limit_degree_max: 0
+      sw_limit_rad_min: -1.5707963267948966
+      sw_limit_rad_max: 0
+  - AX3: # Wrist rotation (초기 그리퍼는 가로로 벌어지게 되어 있음 -> SW 각도가 0이 되면 세로로 벌어지는 모드)
+      id: 3
+      hw_initial_position: 511
+      hw_initial_degree: 150
+      sw_initial_degree: 90
+      sw_initial_rad: 1.5707963267948966
+      sw_limit_degree_min: 0
+      sw_limit_degree_max: 90
+      sw_limit_rad_min: 0
+      sw_limit_rad_max: 1.5707963267948966
+
+# 그리퍼용 모터 (2개)
+gripper_motors:
+  - XC1:
+      id: 4
+      hw_initial_position: 2047
+      hw_initial_degree: 150
+      sw_initial_degree: 90
+      sw_initial_rad: 1.5707963267948966
+      sw_limit_degree_min: 30
+      sw_limit_degree_max: 100
+      sw_limit_rad_min: 0.5235987755982989
+      sw_limit_rad_max: 1.7453292519943295
+  - XC2:
+      id: 5
+      hw_initial_position: 2047
+      hw_initial_degree: 150
+      sw_initial_degree: 90
+      sw_initial_rad: 1.5707963267948966
+      sw_limit_degree_min: 150
+      sw_limit_degree_max: 80
+      sw_limit_rad_min: 2.617993877991494
+      sw_limit_rad_max: 1.3962634015954636
+
+# 로봇 팔 링크 구조 (4-DOF)
+links:
+  base_height: 17.0 # 베이스 높이
+  upper_arm: 10.0 # 상완 길이
+  arm_link: 7.0 # 상완-하완 링크 길이
+  lower_arm: 10.0 # 하완 길이
+  ee_length: None # 측정 전
+  pencil_length: 17.0 # 연필 길이
