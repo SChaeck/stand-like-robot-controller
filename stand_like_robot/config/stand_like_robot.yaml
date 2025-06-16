@@ -28,8 +28,8 @@ arm_motors:
       sw_limit_rad_max: 2.617993877991494
   - AX1: # Shoulder pitch (초기 각도는 팔을 지평에 수직으로 들어올린 각도)
       id: 1
-      hw_initial_position: 477
-      hw_initial_degree: 140
+      hw_initial_position: 511
+      hw_initial_degree: 150
       sw_initial_degree: 90
       sw_initial_rad: 1.5707963267948966
       sw_limit_degree_min: 0
@@ -38,10 +38,10 @@ arm_motors:
       sw_limit_rad_max: 1.5707963267948966
   - AX2: # Elbow pitch (팔꿈치 - 범위 확장으로 더 많은 위치 도달 가능; 초기 각도는 팔을 앞으로 쭉 뻗은 각도)
       id: 2
-      hw_initial_position: 546
-      hw_initial_degree: 160
-      sw_initial_degree: -90
-      sw_initial_rad: -1.5707963267948966
+      hw_initial_position: 818
+      hw_initial_degree: 240
+      sw_initial_degree: 0
+      sw_initial_rad: 0
       sw_limit_degree_min: -90
       sw_limit_degree_max: 0
       sw_limit_rad_min: -1.5707963267948966

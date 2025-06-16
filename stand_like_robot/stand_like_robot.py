@@ -10,6 +10,9 @@
 - 직교좌표: x, y, z (cm 단위)
 - 관절좌표: joint 1-4 (라디안 단위)
 """
+# joint_angles:  [ 0.          1.04719755 -1.04719755  1.57079633]
+# joint_angles:  [ 0.31099828  1.1752937  -1.1752937   1.57079633]
+# joint_angles:  [ 0.31099828  1.1752937  -1.1752937   1.57079633]
 
 import os
 import yaml
@@ -311,7 +314,7 @@ class StandLikeRobot:
         """초기 위치로 이동 (팔만) - 천천히 이동"""
         print("🏠 초기 위치로 이동 중...")
         
-        # 안전한 속도로 초기 위치로 이동 (1.5초에 걸쳐)
+        # 안전한 속도로 초기 위치로 이동 (3초에 걸쳐)
         safe_time = 1.5
         
         degrees = [np.rad2deg(rad) for rad in self.sw_init_joint_radians]
@@ -445,7 +448,7 @@ class StandLikeRobot:
                 real_controller = self.real_arm_controllers[motor_name]
                 try:
                     real_controller.move_to_software_radian(software_rad)
-                    print(f"🔄 DUAL: {motor_name} → Mock+Real 완료")
+                    # print(f"🔄 DUAL: {motor_name} → Mock+Real 완료")
                 except Exception as e:
                     print(f"⚠️ {motor_name} 실제 모터 오류: {e}")
                     
@@ -471,9 +474,18 @@ class StandLikeRobot:
         return radians
     
     def _read_single_arm_position(self, motor_name, controller):
-        """단일 팔 모터 위치 읽기 - 완전한 라디안 기반"""
+        """단일 팔 모터 위치 읽기 - 하드웨어 직접 읽기 방식"""
         try:
-            return controller.read_current_software_radian()
+            # 하드웨어 포지션을 직접 읽어서 오프셋 적용
+            # 이렇게 하면 초기화 시 순환 참조 문제 방지
+            if hasattr(controller, 'read_current_hardware_radian'):
+                # 실제 모터: 하드웨어 라디안 직접 읽기
+                hardware_rad = controller.read_current_hardware_radian()
+                software_rad = controller._hardware_rad_to_software_rad(hardware_rad)
+                return software_rad
+            else:
+                # 모의 모터: 기존 방식 사용
+                return controller.read_current_software_radian()
         except Exception as e:
             print(f"⚠️ {motor_name} 위치 읽기 오류: {e}")
             return 0.0
@@ -548,7 +560,7 @@ class StandLikeRobot:
     def open_gripper(self, time_to_go=1.0):
         """그리퍼 열기"""
         print("🖐️ 그리퍼 열기...")
-        open_radians = [np.radians(60), np.radians(180)]
+        open_radians = [np.radians(100), np.radians(140)]
         self.move_gripper_to_radians(open_radians, time_to_go)
 
     def close_gripper(self, time_to_go=1.0):

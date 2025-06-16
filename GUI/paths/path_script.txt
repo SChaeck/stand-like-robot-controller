@@ -1,0 +1,121 @@
+# 몸통 돌려서 서랍 열기
+((l2-2) * np.cos(theta_2), (l2-2) * np.sin(theta_2), 22)    # 서랍 손잡이로 이동
+rot -> 0                                                 # yaw 수직으로 변경
+((l2-2) * np.cos(theta_2), (l2-2) * np.sin(theta_2), 19)    # 서랍에 그리퍼 걸기
+((l2-8) * np.cos(theta_2), (l2-8) * np.sin(theta_2), 19)    # 서랍 당기기
+((l2-8) * np.cos(theta_2), (l2-8) * np.sin(theta_2), 22)    # 그리퍼 빼기
+((l2) * np.cos(theta_2), (l2) * np.sin(theta_2), 27)    # 살짝 움직이기
+
+# 최상단 블록으로 이동
+rot -> 90
+gripper -> open
+((l1-6) * np.cos(theta_1), (l1-6) * np.sin(theta_1), 35)    # 블록 위로 이동
+((l1-6) * np.cos(theta_1), (l1-6) * np.sin(theta_1), 31.5)    # 블록 잡기
+gipper -> close
+((l1) * np.cos(theta_1), (l1) * np.sin(theta_1), 33)    # 약간 빠지기
+
+# 서랍에 넣기
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 + np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 + np.arctan(4/(l2-5))), 27)    # 서랍 위로
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 + np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 + np.arctan(4/(l2-5))), 19)    # 랜딩지점 위로
+gripper -> open
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 + np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 + np.arctan(4/(l2-5))), 27)    # 올라가기
+
+# 두번쨰 블록으로 이동
+((l1-4.75) * np.cos(theta_1), (l1-4.75) * np.sin(theta_1), 32.5)    # 블록 위로 이동
+((l1-4.75) * np.cos(theta_1), (l1-4.75) * np.sin(theta_1), 29)    # 블록 잡기 
+gripper -> close
+((l1-4.75) * np.cos(theta_1), (l1-4.75) * np.sin(theta_1), 33)    # 약간 빠지기
+
+# 서랍에 넣기
+((l2-5) * np.cos(theta_2), (l2-5) * np.sin(theta_2), 27)    # 서랍 위로
+((l2-5) * np.cos(theta_2), (l2-5) * np.sin(theta_2), 19)    # 랜딩지점 위로
+gripper -> open
+((l2-5) * np.cos(theta_2), (l2-5) * np.sin(theta_2), 27)    # 올라가기
+
+# 세번째 블록으로 이동
+((l1-7.25) * np.cos(theta_1), (l1-7.25) * np.sin(theta_1), 32.5)    # 블록 위로 이동
+((l1-7.25) * np.cos(theta_1), (l1-7.25) * np.sin(theta_1), 29)    # 블록 잡기 
+gripper -> close
+((l1-7.25) * np.cos(theta_1), (l1-7.25) * np.sin(theta_1), 33)    # 약간 빠지기
+
+# 서랍에 넣기
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 - np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 - np.arctan(4/(l2-5))), 27)    # 서랍 위로
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 - np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 - np.arctan(4/(l2-5))), 19)    # 랜딩지점 위로
+gripper -> open
+(((l2-5)**2 + 4**2)**0.5 * np.cos(theta_2 - np.arctan(4/(l2-5))), ((l2-5)**2 + 4**2)**0.5 * np.sin(theta_2 - np.arctan(4/(l2-5))), 27)    # 올라가기
+
+# 서랍 닫기
+rot -> 0
+((l2-8) * np.cos(theta_2), (l2-8) * np.sin(theta_2), 22)    # 서랍 손잡이 위로 이동
+((l2-8) * np.cos(theta_2), (l2-8) * np.sin(theta_2), 19)    # 서랍 손잡이에 그리퍼 걸기
+((l2-1) * np.cos(theta_2), (l2-1) * np.sin(theta_2), 19)    # 서랍 밀기
+rot -> 90
+
+#네번째 블럭 (탑 쌓기)
+gripper -> open
+((l1-1) * np.cos(theta_1), (l1-1) * np.sin(theta_1), 27.5)    # 블록 앞으로 이동
+((l1+3.5) * np.cos(theta_1), (l1+3.5) * np.sin(theta_1), 26.5)    # 블록 잡기 
+gripper -> close
+((l1+3.5) * np.cos(theta_1), (l1+3.5) * np.sin(theta_1), 30.5)    # 약간 빠지기
+
+((l2+7.5) * np.cos(theta_2), (l2+7.5) * np.sin(theta_2), 26)    # 서랍 위로
+((l2+7.5) * np.cos(theta_2), (l2+7.5) * np.sin(theta_2), 23)    # 랜딩지점 위로
+gripper -> open
+((l2+7.5) * np.cos(theta_2), (l2+7.5) * np.sin(theta_2), 27)    # 올라가기; 서랍의 높이에 따라 z값이 달라질 수 있음
+
+# 다섯 번째 블럭 (탑 쌓기)
+gripper -> open
+((l1+1.5) * np.cos(theta_1), (l1+1.5) * np.sin(theta_1), 27.5)    # 블록 앞으로 이동
+((l1+6) * np.cos(theta_1), (l1+6) * np.sin(theta_1), 26.5)    # 블록 잡기 
+gripper -> close
+((l1+6) * np.cos(theta_1), (l1+6) * np.sin(theta_1), 30.5)    # 약간 빠지기
+
+((l2+5) * np.cos(theta_2), (l2+5) * np.sin(theta_2), 26)    # 서랍 위로
+((l2+5) * np.cos(theta_2), (l2+5) * np.sin(theta_2), 23)    # 랜딩지점 위로
+gripper -> open
+((l2+5) * np.cos(theta_2), (l2+5) * np.sin(theta_2), 27)    # 올라가기; 서랍의 높이에 따라 z값이 달라질 수 있음
+
+# 여섯번째 블럭 (탑 쌓기)
+gripper -> open
+((l1+4) * np.cos(theta_1), (l1+4) * np.sin(theta_1), 27.5)    # 블록 앞으로 이동
+((l1+8.5) * np.cos(theta_1), (l1+8.5) * np.sin(theta_1), 26.5)    # 블록 잡기 
+gripper -> close
+((l1+8.5) * np.cos(theta_1), (l1+8.5) * np.sin(theta_1), 30.5)    # 약간 빠지기
+
+((l2+2.5) * np.cos(theta_2), (l2+2.5) * np.sin(theta_2), 26)    # 서랍 위로
+((l2+2.5) * np.cos(theta_2), (l2+2.5) * np.sin(theta_2), 23)    # 랜딩지점 위로
+gripper -> open
+((l2+2.5) * np.cos(theta_2), (l2+2.5) * np.sin(theta_2), 27)    # 올라가기; 서랍의 높이에 따라 z값이 달라질 수 있음
+
+
+# 일곱번째 블럭
+((l1+2.25) * np.cos(theta_1), (l1+2.25) * np.sin(theta_1), 27.5)    # 블록 위로 이동
+((l1+2.25) * np.cos(theta_1), (l1+2.25) * np.sin(theta_1), 24)    # 블록 잡기, 받침대 턱 주의
+gripper -> close
+((l1+2.25) * np.cos(theta_1), (l1+2.25) * np.sin(theta_1), 27.5)    # 약간 빠지기
+
+((l2+6.25) * np.cos(theta_2), (l2+6.25) * np.sin(theta_2), 28.5)    # 서랍 위로
+((l2+6.25) * np.cos(theta_2), (l2+6.25) * np.sin(theta_2), 25.5)    # 랜딩지점 위로
+gripper -> open
+((l2+6.25) * np.cos(theta_2), (l2+6.25) * np.sin(theta_2), 28.5)  
+
+# 여덟번째 블럭
+((l1+4.75) * np.cos(theta_1), (l1+4.75) * np.sin(theta_1), 27.5)    # 블록 위로 이동
+((l1+4.75) * np.cos(theta_1), (l1+4.75) * np.sin(theta_1), 24)    # 블록 잡기, 받침대 턱 주의
+gripper -> close
+((l1+4.75) * np.cos(theta_1), (l1+4.75) * np.sin(theta_1), 27.5)    # 약간 빠지기
+
+((l2+3.75) * np.cos(theta_2), (l2+3.75) * np.sin(theta_2), 28.5)    # 서랍 위로
+((l2+3.75) * np.cos(theta_2), (l2+3.75) * np.sin(theta_2), 25.5)    # 랜딩지점 위로
+gripper -> open
+((l2+3.75) * np.cos(theta_2), (l2+3.75) * np.sin(theta_2), 28.5)  
+
+# 아홉번째 블럭
+((l1+7.25) * np.cos(theta_1), (l1+7.25) * np.sin(theta_1), 27.5)    # 블록 위로 이동
+((l1+7.25) * np.cos(theta_1), (l1+7.25) * np.sin(theta_1), 24)    # 블록 잡기, 받침대 턱 주의
+gripper -> close
+((l1+7.25) * np.cos(theta_1), (l1+7.25) * np.sin(theta_1), 27.5)    # 약간 빠지기
+
+((12+5) * np.cos(theta_2), (l2+5) * np.sin(theta_2), 29.5)    # 서랍 위로
+((l2+5) * np.cos(theta_2), (l2+5) * np.sin(theta_2), 28)    # 랜딩지점 위로
+gripper -> open

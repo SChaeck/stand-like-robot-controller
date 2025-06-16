@@ -13,6 +13,7 @@
 - Joint 2 = 0: 팔이 -Z축 방향으로 올곧게 내려옴
 """
 import numpy as np
+from scipy.optimize import fsolve
 
 class KinematicSolver:
     def __init__(self, config=None):
@@ -27,10 +28,10 @@ class KinematicSolver:
         - 연필 길이: 17 cm
         """
         # 로봇 링크 길이 (cm)
-        self.base_height = 17.0      # 베이스 높이
-        self.upper_arm = 10.0        # 상완 길이
-        self.lower_arm = 10.0        # 하완 길이 
-        self.arm_link = 7.0          # 상완-하완 링크 길이
+        self.L1 = 17.0      # 베이스 높이
+        self.L2 = 10.0        # 상완 길이
+        self.L3 = 7.0          # 상완-하완 링크 길이
+        self.L4 = 10.0        # 하완 길이 
         self.ee_length = 17.0     # 연필 길이
         # 연필 = 17cm
         
@@ -39,8 +40,8 @@ class KinematicSolver:
         self.n_joints = 4
         
         print(f"✅ 기하학적 운동학 해결기 초기화:")
-        print(f"   베이스: {self.base_height}cm, 상완: {self.upper_arm}cm")
-        print(f"   하완: {self.lower_arm}cm, 손목: {self.ee_length}cm")
+        print(f"   베이스: {self.L1}cm, 상완: {self.L2}cm")
+        print(f"   하완: {self.L4}cm, 손목: {self.ee_length}cm")
 
     def forward_kinematics(self, joint_angles):
         """
@@ -106,111 +107,32 @@ class KinematicSolver:
         try:
             x, y, z = target_position[:3]
             
-            # 단위 자동 감지 (미터면 cm로 변환)
-            if abs(x) < 5 and abs(y) < 5 and abs(z) < 5:  # 미터로 추정
-                x, y, z = x * 100, y * 100, z * 100
+            length_n = (np.sqrt(x**2 + y**2) - self.L3)
+            length_z = z - self.L1
             
-            # 1단계: 베이스 회전 계산
-            theta_0 = np.arctan2(y, x)
-            r_target = np.sqrt(x**2 + y**2)  # 목표점까지의 수평 거리
+            def equations(vars):
+                theta1, theta2 = vars
+                eq1 = (np.sin(theta1) + np.sin(theta2))*self.L2 - length_n
+                eq2 = (np.cos(theta1) - np.cos(theta2))*self.L2 - length_z
+                return [eq1, eq2]
             
-            # 2단계: 실제 로봇 구조 기반 해석적 IK
-            # 목표: r = 30*cos(theta_alpha)*cos(theta_beta) + 10.7
-            #       z = 17 + 30*sin(theta_alpha)*cos(theta_beta)
+            # 초기 추정값
+            initial_guess = [0, 0]
+
+            # 수치 해 찾기
+            solution = fsolve(equations, initial_guess)
+            theta1_sol, theta2_sol = solution
+
+            th_z = np.arctan2(y,x)
+            th_0 = self._normalize_angle(th_z)
+            th_1 = self._normalize_angle(np.pi/2 - theta1_sol)
+            th_2 = self._normalize_angle(-(np.pi/2) + theta2_sol)
             
-            # 특별한 경우: z = 17 (베이스 높이와 같음)
-            if abs(z - 17.0) < 0.1:  # z ≈ 17cm
-                # z = 17이면 30*sin(theta_alpha)*cos(theta_beta) = 0이어야 함
-                # sin(theta_alpha) = 0 또는 cos(theta_beta) = 0
-                # 일반적으로 theta_alpha = 0 (팔이 수평)
-                best_theta_alpha = 0.0
-                
-                # r = 30*cos(0)*cos(theta_beta) + 10.7 = 30*cos(theta_beta) + 10.7
-                cos_beta = (r_target - 10.7) / 30.0
-                if abs(cos_beta) <= 1.0:
-                    best_theta_beta = np.arccos(abs(cos_beta))
-                    best_error = 0.0
-                    print(f"✅ z=17 특별한 경우: theta_alpha=0°, theta_beta={np.rad2deg(best_theta_beta):.1f}°")
-                else:
-                    print(f"⚠️ z=17이지만 도달 불가능한 거리: r={r_target:.1f}cm (최대: {40.7}cm)")
-                    best_theta_alpha = 0.0
-                    best_theta_beta = 0.0
-                    best_error = float('inf')
-            else:
-                # 일반적인 경우: 반복적 탐색 (정밀도 개선)
-                best_error = float('inf')
-                best_theta_alpha = 0
-                best_theta_beta = 0
-                
-                # 1단계: 거친 탐색 (1도 간격)
-                for beta_deg in range(0, 91, 1):  # 0~90도, 1도 간격
-                    theta_beta = np.deg2rad(beta_deg)
-                    
-                    # alpha 범위: [-beta, 90-beta]
-                    alpha_min = max(-beta_deg, -90)  # 최소 -90도로 제한
-                    alpha_max = min(90 - beta_deg, 90)  # 최대 90도로 제한
-                    
-                    for alpha_deg in range(alpha_min, alpha_max + 1, 1):  # 1도 간격
-                        theta_alpha = np.deg2rad(alpha_deg)
-                        
-                        # Forward kinematics 계산
-                        r_calc = 30.0 * np.cos(theta_alpha) * np.cos(theta_beta) + 10.7
-                        z_calc = 17.0 + 30.0 * np.sin(theta_alpha) * np.cos(theta_beta)
-                        
-                        # 오차 계산
-                        error_r = abs(r_calc - r_target)
-                        error_z = abs(z_calc - z)
-                        total_error = error_r + error_z
-                        
-                        if total_error < best_error:
-                            best_error = total_error
-                            best_theta_alpha = theta_alpha
-                            best_theta_beta = theta_beta
-                
-                # 2단계: 세밀한 탐색 (0.1도 간격으로 미세 조정)
-                if best_error > 0.01:  # 1cm 이상 오차가 있으면 미세 조정
-                    best_alpha_deg = np.rad2deg(best_theta_alpha)
-                    best_beta_deg = np.rad2deg(best_theta_beta)
-                    
-                    # 최적해 주변 ±2도 범위에서 0.1도 간격 탐색
-                    fine_alpha_min = max(best_alpha_deg - 2, -90)
-                    fine_alpha_max = min(best_alpha_deg + 2, 90)
-                    fine_beta_min = max(best_beta_deg - 2, 0)
-                    fine_beta_max = min(best_beta_deg + 2, 90)
-                    
-                    alpha_range = np.arange(fine_alpha_min, fine_alpha_max + 0.1, 0.1)
-                    beta_range = np.arange(fine_beta_min, fine_beta_max + 0.1, 0.1)
-                    
-                    for beta_deg in beta_range:
-                        theta_beta = np.deg2rad(beta_deg)
-                        
-                        for alpha_deg in alpha_range:
-                            # alpha 범위 재확인
-                            if alpha_deg < -beta_deg or alpha_deg > 90 - beta_deg:
-                                continue
-                                
-                            theta_alpha = np.deg2rad(alpha_deg)
-                            
-                            # Forward kinematics 계산
-                            r_calc = 30.0 * np.cos(theta_alpha) * np.cos(theta_beta) + 10.7
-                            z_calc = 17.0 + 30.0 * np.sin(theta_alpha) * np.cos(theta_beta)
-                            
-                            # 오차 계산
-                            error_r = abs(r_calc - r_target)
-                            error_z = abs(z_calc - z)
-                            total_error = error_r + error_z
-                            
-                            if total_error < best_error:
-                                best_error = total_error
-                                best_theta_alpha = theta_alpha
-                                best_theta_beta = theta_beta
+            th_3 = self._normalize_angle(np.pi/2)
             
-            # 3단계: theta_alpha, theta_beta를 theta_1, theta_2로 변환
-            theta_1 = best_theta_alpha + best_theta_beta
-            theta_2 = best_theta_alpha - best_theta_beta
-            theta_3 = 0.0  # Joint 3 (손목)
+            joint_angles = np.array([th_0, th_1, th_2, th_3])
             
-            joint_angles = np.array([theta_0, theta_1, theta_2, theta_3])
+            print("joint_angles: ", joint_angles)
             
             # 검증: Forward kinematics로 확인
             verify_pos, _ = self.forward_kinematics(joint_angles)
@@ -220,8 +142,7 @@ class KinematicSolver:
                 print(f"⚠️ IK 검증 오차: {error:.3f}cm")
                 print(f"   목표: [{x:.1f}, {y:.1f}, {z:.1f}] cm")
                 print(f"   실제: [{verify_pos[0]:.1f}, {verify_pos[1]:.1f}, {verify_pos[2]:.1f}] cm")
-                print(f"   관절: [{np.rad2deg(theta_0):.1f}, {np.rad2deg(theta_1):.1f}, {np.rad2deg(theta_2):.1f}, {np.rad2deg(theta_3):.1f}] 도")
-                print(f"   theta_alpha: {np.rad2deg(best_theta_alpha):.1f}°, theta_beta: {np.rad2deg(best_theta_beta):.1f}°")
+                print(f"   관절: [{np.rad2deg(th_0):.1f}, {np.rad2deg(th_1):.1f}, {np.rad2deg(th_2):.1f}, {np.rad2deg(th_3):.1f}] 도")
             
             return joint_angles
             
@@ -231,14 +152,14 @@ class KinematicSolver:
 
     def get_workspace_bounds(self):
         """작업 공간 경계 반환 (cm)"""
-        max_reach = self.upper_arm + self.lower_arm + self.ee_length
-        min_reach = max(0, self.upper_arm - (self.lower_arm + self.ee_length))
+        max_reach = self.L2 + self.L4 + self.ee_length
+        min_reach = max(0, self.L2 - (self.L4 + self.ee_length))
         
         return {
             'max_reach': max_reach,
             'min_reach': min_reach,
-            'max_height': self.base_height + max_reach,
-            'min_height': self.base_height - max_reach
+            'max_height': self.L1 + max_reach,
+            'min_height': self.L1 - max_reach
         }
 
     def check_joint_limits(self, joint_angles, joint_limits_rad=None):
@@ -287,6 +208,12 @@ class KinematicSolver:
         theta1 = theta_alpha + theta_beta
         theta2 = theta_alpha - theta_beta
         return theta1, theta2
+
+    def _normalize_angle(self, angle):
+        """각도를 -π ~ π 범위로 정규화 (래핑)"""
+        # 모듈로 연산을 사용한 효율적인 방법
+        return ((angle + np.pi) % (2 * np.pi)) - np.pi
+
 
 def test_kinematics():
     """간단한 테스트"""

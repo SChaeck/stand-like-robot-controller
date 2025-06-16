@@ -35,7 +35,7 @@ def compute_circle_points(center: Tuple[float, float, float], radius: float, num
         raise ValueError(f"Unsupported plane '{plane}'. Choose from {PLANE_OPTIONS}.")
 
     cx, cy, cz = center
-    angles = np.linspace(0.0, 2 * np.pi, num, endpoint=False)
+    angles = np.linspace(0.0, 2 * np.pi, num + 1, endpoint=True)
     pts: List[Tuple[float, float, float]] = []
 
     for a in angles:
@@ -72,7 +72,7 @@ class CircleDrawerGUI:
         self.cur_idx: int = 0
         self.is_animating: bool = False
         self.anim: FuncAnimation | None = None
-        self.ms_per_step: int = 300  # default 0.3s between points
+        self.ms_per_step: int = 100  # default 0.3s between points
 
         # Build the figure
         self._init_gui()
@@ -108,7 +108,13 @@ class CircleDrawerGUI:
         y -= v_gap
         self.fig.text(panel_left, y, "Points", weight="bold")
         y -= v_gap
-        self.box_pts = TextBox(self._ax(panel_left, y, width, height), "n", initial="30")
+        self.box_pts = TextBox(self._ax(panel_left, y, width, height), "n", initial="100")
+
+        # Time per step
+        y -= v_gap
+        self.fig.text(panel_left, y, "Time/step (ms)", weight="bold")
+        y -= v_gap
+        self.box_time_step = TextBox(self._ax(panel_left, y, width, height), "ms", initial=str(self.ms_per_step))
 
         # Plane slider (0=xy,1=xz,2=yz)
         y -= v_gap
@@ -174,6 +180,16 @@ class CircleDrawerGUI:
         if self.is_animating:
             return
 
+        # Read time per step from GUI
+        try:
+            time_step = int(self.box_time_step.text)
+            if time_step <= 0:
+                raise ValueError("Time must be positive.")
+            self.ms_per_step = time_step
+        except ValueError as e:
+            self.txt_status.set_text(f"Invalid time: {e}")
+            return
+
         self.is_animating = True
         self.cur_idx = 0
         interval_ms = self.ms_per_step
@@ -203,7 +219,10 @@ class CircleDrawerGUI:
             return
 
         target = self.circle_points[self.cur_idx]
-        self.sim.move_end_effector(target, time_to_go=self.ms_per_step / 1000.0)
+        if self.cur_idx == 0:
+            self.sim.move_end_effector(target, time_to_go=1.5)
+        else:
+            self.sim.move_end_effector(target, time_to_go=self.ms_per_step / 1000.0)
         self._update_visual(show_circle=True, highlight_idx=self.cur_idx)
         self.cur_idx += 1
         self.fig.canvas.draw_idle()

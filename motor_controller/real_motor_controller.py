@@ -38,7 +38,7 @@ class RealMotorController:
         # 소프트웨어-하드웨어 각도 오프셋 계산
         self.angle_offset_rad = hw_initial_rad - sw_initial_rad
         
-        print(f"🔧 Motor {self.motor_id} 오프셋: HW={np.rad2deg(hw_initial_rad):.1f}° - SW={np.rad2deg(sw_initial_rad):.1f}° = {np.rad2deg(self.angle_offset_rad):.1f}°")
+        # print(f"🔧 Motor {self.motor_id} 오프셋: HW={np.rad2deg(hw_initial_rad):.1f}° - SW={np.rad2deg(sw_initial_rad):.1f}° = {np.rad2deg(self.angle_offset_rad):.1f}°")
         
         # 실제 하드웨어 컨트롤러 생성
         if motor_type == 'AX':
@@ -64,7 +64,7 @@ class RealMotorController:
         else:
             self._perform_initial_calibration()
         
-        print(f"✅ Real Motor Controller initialized: ID={self.motor_id}, Type={motor_type}")
+        # print(f"✅ Real Motor Controller initialized: ID={self.motor_id}, Type={motor_type}")
     
     ######## Core Radian-Based System ########
     
@@ -109,7 +109,7 @@ class RealMotorController:
             # 4. 현재 소프트웨어 위치 업데이트
             self.current_software_rad = software_rad
             
-            print(f"🎯 Motor {self.motor_id}: SW={np.rad2deg(software_rad):.1f}° → HW={np.rad2deg(hardware_rad):.1f}° → Pos={hardware_position}")
+            # print(f"🎯 Motor {self.motor_id}: SW={np.rad2deg(software_rad):.1f}° → HW={np.rad2deg(hardware_rad):.1f}° → Pos={hardware_position}")
             
             # 명령 완료 대기
             time.sleep(0.01)
@@ -117,19 +117,31 @@ class RealMotorController:
         except Exception as e:
             print(f"❌ Motor {self.motor_id} 이동 오류: {e}")
     
+    def read_current_hardware_radian(self):
+        """현재 하드웨어 라디안 각도 직접 읽기 - 오프셋 적용 없음"""
+        try:
+            # 1. 하드웨어 위치 직접 읽기
+            hardware_position = self.hw_controller.read_current_position()
+            
+            # 2. 모터 위치값 → 하드웨어 라디안 (오프셋 적용 안함)
+            hardware_rad = self._position_to_rad(hardware_position)
+            
+            return hardware_rad
+            
+        except Exception as e:
+            print(f"❌ Motor {self.motor_id} 하드웨어 위치 읽기 오류: {e}")
+            return 0.0
+
     def read_current_software_radian(self):
         """현재 소프트웨어 라디안 각도 읽기 - 주요 API"""
         try:
-            # 1. 하드웨어 위치 읽기
-            hardware_position = self.hw_controller.read_current_position()
+            # 1. 하드웨어 라디안 직접 읽기
+            hardware_rad = self.read_current_hardware_radian()
             
-            # 2. 모터 위치값 → 하드웨어 라디안
-            hardware_rad = self._position_to_rad(hardware_position)
-            
-            # 3. 하드웨어 라디안 → 소프트웨어 라디안
+            # 2. 하드웨어 라디안 → 소프트웨어 라디안
             software_rad = self._hardware_rad_to_software_rad(hardware_rad)
             
-            # 4. 현재 소프트웨어 위치 업데이트
+            # 3. 현재 소프트웨어 위치 업데이트
             self.current_software_rad = software_rad
             
             return software_rad
