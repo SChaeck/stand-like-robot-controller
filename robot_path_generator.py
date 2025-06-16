@@ -2,7 +2,11 @@ import numpy as np
 import json
 import argparse
 
-def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset=0, output_file="robot_path.json", time_to_go=1.5):
+def generate_robot_path(
+    l1, l2, theta1, theta2, 
+    object1_offset=0, object2_offset=0, 
+    reach_offset=0, 
+    output_file="robot_path.json", time_to_go=1.5):
     """
     로봇 경로를 생성하여 JSON 파일로 저장하는 함수
     
@@ -16,12 +20,21 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
     
     path = []
     
+    l1 = l1 + reach_offset
+    
     # 몸통 돌려서 서랍 열기
     path.extend([
         {
-            "id": 1,
+            "id": 1.1,
             "type": "gripper",
             "open": False
+        },
+        {
+            "id": 1.2,
+            "type": "move",
+            "pos": [8.74 * np.cos(theta2), 8.74 * np.sin(theta2), 17],
+            "rot": 0,
+            "time": time_to_go
         },
         {
             "id": 2,
@@ -40,14 +53,28 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 4,
             "type": "move", 
-            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 18+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 17.5+object2_offset],
             "rot": 0,
             "time": time_to_go
         },
         {
-            "id": 5,
+            "id": 5.1,
             "type": "move",
-            "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 18+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-4) * np.cos(theta2), (l2-4) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "rot": 0,
+            "time": time_to_go
+        },
+        {
+            "id": 5.2,
+            "type": "move",
+            "pos": [(l2-6) * np.cos(theta2), (l2-6) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "rot": 0,
+            "time": time_to_go
+        },
+        {
+            "id": 5.3,
+            "type": "move",
+            "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
             "time": time_to_go
         },
@@ -84,14 +111,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 9,
             "type": "move",
-            "pos": [(l1+7.5) * np.cos(theta1), (l1+7.5) * np.sin(theta1), 35+object1_offset],
+            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 35+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 10,
             "type": "move",
-            "pos": [(l1+7.5) * np.cos(theta1), (l1+7.5) * np.sin(theta1), 31.5+object1_offset],
+            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 31.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -103,15 +130,15 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 12,
             "type": "move",
-            "pos": [(l1+7.5) * np.cos(theta1), (l1+7.5) * np.sin(theta1), 33+object1_offset],
+            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 33+object1_offset],
             "rot": 90,
             "time": time_to_go
         }
     ])
     
     # 서랍에 넣기 (첫 번째 블록)
-    drawer_x1 = ((l2-5)**2 + 4**2)**0.5 * np.cos(theta2 + np.arctan(4/(l2-5))) + 0.5 # [temp] 서랍에 넣게 하려고 `0.5` 추가
-    drawer_y1 = ((l2-5)**2 + 4**2)**0.5 * np.sin(theta2 + np.arctan(4/(l2-5))) + 0.5 # [temp] 서랍에 넣게 하려고 `0.5` 추가
+    drawer_x1 = ((l2-1.5)**2 + 4**2)**0.5 * np.cos(theta2 + np.arctan(4/(l2-1.5)))
+    drawer_y1 = ((l2-1.5)**2 + 4**2)**0.5 * np.sin(theta2 + np.arctan(4/(l2-1.5)))
     
     path.extend([
         {
@@ -147,14 +174,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 17,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 32.5+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 32.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 18,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 29+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 29+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -166,7 +193,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 20,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 33+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 33+object1_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -177,14 +204,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 21,
             "type": "move",
-            "pos": [(l2-5) * np.cos(theta2), (l2-5) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 22,
             "type": "move",
-            "pos": [(l2-5) * np.cos(theta2), (l2-5) * np.sin(theta2), 19+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 19+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -196,7 +223,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 24,
             "type": "move",
-            "pos": [(l2-5) * np.cos(theta2), (l2-5) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2-3) * np.cos(theta2), (l2-3) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -207,14 +234,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 25,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 32.5+object1_offset],
+            "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 32.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 26,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 29+object1_offset],
+            "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 29+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -226,15 +253,15 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 28,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 33+object1_offset],
+            "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 33+object1_offset],
             "rot": 90,
             "time": time_to_go
         }
     ])
     
     # 서랍에 넣기 (세 번째 블록)
-    drawer_x3 = ((l2-5)**2 + 4**2)**0.5 * np.cos(theta2 - np.arctan(4/(l2-5)))
-    drawer_y3 = ((l2-5)**2 + 4**2)**0.5 * np.sin(theta2 - np.arctan(4/(l2-5)))
+    drawer_x3 = ((l2-1.5)**2 + 4**2)**0.5 * np.cos(theta2 - np.arctan(4/(l2-1.5)))
+    drawer_y3 = ((l2-1.5)**2 + 4**2)**0.5 * np.sin(theta2 - np.arctan(4/(l2-1.5)))
     
     path.extend([
         {
@@ -276,21 +303,21 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
             "id": 34,
             "type": "move",
             "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 22+object2_offset],
-            "rot": 0,
+            "rot": 90,
             "time": time_to_go
         },
         {
             "id": 35,
             "type": "move",
-            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 19+object2_offset],
-            "rot": 0,
+            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 18.5+object2_offset],
+            "rot": 90,
             "time": time_to_go
         },
         {
             "id": 36,
             "type": "move",
-            "pos": [(l2-1) * np.cos(theta2), (l2-1) * np.sin(theta2), 19+object2_offset],
-            "rot": 0,
+            "pos": [(l2+0.5) * np.cos(theta2), (l2+0.5) * np.sin(theta2), 18.5+object2_offset],
+            "rot": 90,
             "time": time_to_go
         },
         {
@@ -319,7 +346,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 40,
             "type": "move",
-            "pos": [(l1+5) * np.cos(theta1), (l1+5) * np.sin(theta1), 26.5+object1_offset],
+            "pos": [(l1+3.5) * np.cos(theta1), (l1+3.5) * np.sin(theta1), 26.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -331,7 +358,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 42,
             "type": "move",
-            "pos": [(l1+5) * np.cos(theta1), (l1+5) * np.sin(theta1), 30.5+object1_offset],
+            "pos": [(l1+3.5) * np.cos(theta1), (l1+3.5) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -345,7 +372,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 44,
             "type": "move",
-            "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 23+object2_offset],
+            "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -375,7 +402,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 48,
             "type": "move",
-            "pos": [(l1+7.5) * np.cos(theta1), (l1+7.5) * np.sin(theta1), 26.5+object1_offset],
+            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 26.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -387,7 +414,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 50,
             "type": "move",
-            "pos": [(l1+7.5) * np.cos(theta1), (l1+7.5) * np.sin(theta1), 30.5+object1_offset],
+            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -401,7 +428,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 52,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 23+object2_offset],
+            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -431,7 +458,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 56,
             "type": "move",
-            "pos": [(l1+10) * np.cos(theta1), (l1+10) * np.sin(theta1), 26.5+object1_offset],
+            "pos": [(l1+8.5) * np.cos(theta1), (l1+8.5) * np.sin(theta1), 26.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -443,7 +470,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 58,
             "type": "move",
-            "pos": [(l1+10) * np.cos(theta1), (l1+10) * np.sin(theta1), 30.5+object1_offset],
+            "pos": [(l1+8.5) * np.cos(theta1), (l1+8.5) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -457,7 +484,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 60,
             "type": "move",
-            "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 23+object2_offset],
+            "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -480,14 +507,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 63,
             "type": "move",
-            "pos": [(l1+3.75) * np.cos(theta1), (l1+3.75) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+2.25) * np.cos(theta1), (l1+2.25) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 64,
             "type": "move",
-            "pos": [(l1+3.75) * np.cos(theta1), (l1+3.75) * np.sin(theta1), 24+object1_offset],
+            "pos": [(l1+2.25) * np.cos(theta1), (l1+2.25) * np.sin(theta1), 24+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -499,7 +526,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 66,
             "type": "move",
-            "pos": [(l1+3.75) * np.cos(theta1), (l1+3.75) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+2.25) * np.cos(theta1), (l1+2.25) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -513,7 +540,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 68,
             "type": "move",
-            "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 25.5+object2_offset],
+            "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -536,14 +563,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 71,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 72,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 24+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 24+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -555,7 +582,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 74,
             "type": "move",
-            "pos": [(l1+6.25) * np.cos(theta1), (l1+6.25) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -569,7 +596,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 76,
             "type": "move",
-            "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 25.5+object2_offset],
+            "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -592,14 +619,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 79,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 26+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 80,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 24+object1_offset],
+            "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 24+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -611,7 +638,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 82,
             "type": "move",
-            "pos": [(l1+8.75) * np.cos(theta1), (l1+8.75) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -625,7 +652,7 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
         {
             "id": 84,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 28+object2_offset],
+            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -633,7 +660,14 @@ def generate_robot_path(l1, l2, theta1, theta2, object1_offset=0, object2_offset
             "id": 85,
             "type": "gripper",
             "open": True
-        }
+        },
+        {
+            "id": 84,
+            "type": "move",
+            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 29.5+object2_offset],
+            "rot": 90,
+            "time": time_to_go
+        },
     ])
     
     # Home position
@@ -671,17 +705,17 @@ def main():
     
     args = parser.parse_args()
     
-    # Z_OFFSET = 2.0
-    
     # 각도를 라디안으로 변환
     theta1_rad = np.radians(args.theta1)
     theta2_rad = np.radians(args.theta2)
     
-    object1_offset = -6.25 + 1 # -6.25 -> 밑 받침 제거, +1 -> 블록 하나만 잡게 하려고 임의 조정
-    object2_offset = 0
+    OBJECT1_OFFSET = -7
+    OBJECT2_OFFSET = 0
+    
+    REACH_OFFSET = 1.5
     
     if args.output is None:
-        args.output = f"robot_path_{int(args.theta1)}_{int(args.l1)}_{int(args.theta2)}_{int(args.l2)}_{args.time_to_go}_{object1_offset}_{object2_offset}.json"
+        args.output = f"robot_path_{int(args.theta1)}_{int(args.l1)}_{int(args.theta2)}_{int(args.l2)}_{args.time_to_go}_{OBJECT1_OFFSET}_{OBJECT2_OFFSET}_{REACH_OFFSET}.json"
     
     print('args.output', args.output)
     
@@ -689,7 +723,8 @@ def main():
         
     # 경로 생성
     generate_robot_path(args.l1, args.l2, theta1_rad, theta2_rad, 
-                        object1_offset=object1_offset, object2_offset=object2_offset,
+                        object1_offset=OBJECT1_OFFSET, object2_offset=OBJECT2_OFFSET,
+                        reach_offset=REACH_OFFSET,
                         output_file=output_file, time_to_go=args.time_to_go)
 
 if __name__ == "__main__":

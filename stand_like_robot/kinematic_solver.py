@@ -86,7 +86,7 @@ class KinematicSolver:
         orientation = np.array([0, theta_1, theta_0])
         
         return position, orientation
-
+    
     def inverse_kinematics(self, target_position, **kwargs):
         """
         역운동학: 목표 위치 → 관절 각도
@@ -118,17 +118,27 @@ class KinematicSolver:
             
             # 초기 추정값
             initial_guess = [0, 0]
-
+            
             # 수치 해 찾기
             solution = fsolve(equations, initial_guess)
             theta1_sol, theta2_sol = solution
-
+            
             th_z = np.arctan2(y,x)
             th_0 = self._normalize_angle(th_z)
             th_1 = self._normalize_angle(np.pi/2 - theta1_sol)
             th_2 = self._normalize_angle(-(np.pi/2) + theta2_sol)
             
             th_3 = self._normalize_angle(np.pi/2)
+            
+            # 뒤집어진 solve 결과 변환
+            if th_1 < 0 and th_2 > 0:
+                temp = th_1
+                th_1 = th_2
+                th_2 = temp
+            
+            # 1번째 관절 뒤로 넘어가려는거 제한
+            if th_1 > 1.7:
+                th_1 = 1.7
             
             joint_angles = np.array([th_0, th_1, th_2, th_3])
             
