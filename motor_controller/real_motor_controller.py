@@ -12,11 +12,21 @@ import numpy as np
 import time
 from dynamixel_sdk.controllerAX import ControllerAX
 from dynamixel_sdk.controllerXC import ControllerXC
+from dynamixel_sdk import PacketHandler
+
+# 기본 Compliance 세기 (AX용)
+DEFAULT_AX_MARGIN = 1   # 0~2 (작을수록 정밀)
+DEFAULT_AX_SLOPE  = 8   # 32→16→8→4→2 로 내릴수록 단단
+
+# Torque / Position addresses
+ADDR_TORQUE_ENABLE = 64
+ADDR_GOAL_POSITION = 116
+ADDR_PRESENT_POSITION = 132
 
 class RealMotorController:
     """실제 모터 하드웨어 추상화 컨트롤러 - 단일 라디안 기반"""
     
-    def __init__(self, port_handler, baudrate, motor_info, motor_type='AX', safe_init=True, hw_initial_rad=0.0, sw_initial_rad=0.0):
+    def __init__(self, port_handler, baudrate, motor_info, motor_type='AX', safe_init=True, hw_initial_rad=None, sw_initial_rad=None):
         """
         실제 모터 초기화 및 캘리브레이션
         Args:
@@ -58,6 +68,7 @@ class RealMotorController:
         self.hw_controller.torque_enable()
         time.sleep(0.1)  # 안정화 대기
         
+
         # 초기 캘리브레이션 수행
         if safe_init:
             self._perform_safe_calibration()
@@ -239,6 +250,29 @@ class RealMotorController:
             self.hw_controller.set_position_p_gain(gain_value)
         print(f"🎛️ Motor {self.motor_id} P gain set to {gain_value}")
     
+    def set_pid_gains(self, p_gain, i_gain, d_gain):
+        """
+        모터의 PID 게인을 설정합니다.
+        
+        Args:
+            p_gain (int): Proportional 게인 (0-254)
+            i_gain (int): Integral 게인 (0-254)
+            d_gain (int): Derivative 게인 (0-254)
+        """
+        self.p_gain, self.i_gain, self.d_gain = p_gain, i_gain, d_gain
+        print(f"🔩 Motor {self.motor_id}: PID 게인 설정 -> P={p_gain}, I={i_gain}, D={d_gain}")
+
+        try:
+            # P 게인 설정 (2바이트)
+            self.hw_controller.write2ByteTxRx(self.port_handler, self.motor_id, ADDR_P_GAIN, p_gain)
+            # I 게인 설정 (2바이트)
+            self.hw_controller.write2ByteTxRx(self.port_handler, self.motor_id, ADDR_I_GAIN, i_gain)
+            # D 게인 설정 (2바이트)
+            self.hw_controller.write2ByteTxRx(self.port_handler, self.motor_id, ADDR_D_GAIN, d_gain)
+            print(f"  ✅ PID 게인 설정 완료.")
+        except Exception as e:
+            print(f"  ❌ PID 게인 설정 실패: {e}")
+
     ######## Information and Debugging ########
     
     def get_calibration_info(self):

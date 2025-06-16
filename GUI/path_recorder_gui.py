@@ -257,7 +257,8 @@ class PathRecorderGUI:
                     self.sim.move_end_effector(
                         step["pos"], 
                         z_rotation_deg=step.get("rot", 0), 
-                        time_to_go=step.get("time", 2)
+                        time_to_go=step.get("time", 2),
+                        use_cartesian_interpolation=step["use_cartesian_interpolation"] if step.get("is_cartesian_interpolation", False) else False
                     )
                 elif step["type"] == "home":
                     self.sim.move_to_home_position()

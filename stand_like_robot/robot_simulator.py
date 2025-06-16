@@ -300,7 +300,7 @@ class RobotSimulator:
         return info
 
     ######## High-level Action API ########
-    def move_end_effector(self, target_pos_cm, z_rotation_deg=0, time_to_go=2.0, sync_state=True):
+    def move_end_effector(self, target_pos_cm, z_rotation_deg=0, time_to_go=2.0, sync_state=True, use_cartesian_interpolation=True):
         """엔드이펙터를 (x,y,z)로 이동시키고 내부 시뮬레이터 상태를 동기화한다.
 
         Args:
@@ -317,7 +317,8 @@ class RobotSimulator:
             self.robot.move_to_position_with_orientation(
                 target_position=target_pos_cm,
                 z_rotation_deg=z_rotation_deg,
-                time_to_go=time_to_go
+                time_to_go=time_to_go,
+                use_cartesian_interpolation=use_cartesian_interpolation
             )
 
             # 이동 완료 후 현재 관절 각도 읽기

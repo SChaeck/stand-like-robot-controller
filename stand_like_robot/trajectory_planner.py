@@ -96,6 +96,38 @@ class TrajectoryPlanner:
             'time_points': time_points
         }
 
+    def plan_cartesian(self, start_cartesian_pos, end_cartesian_pos, time_to_go):
+        """
+        직선 경로의 Cartesian 궤적 계획
+        Args:
+            start_cartesian_pos: 시작 직교좌표 위치 [x, y, z]
+            end_cartesian_pos: 목표 직교좌표 위치 [x, y, z]
+            time_to_go: 이동 시간 (초)
+        Returns:
+            직교좌표 위치 궤적과 시간 지점
+        """
+        start_pos = np.array(start_cartesian_pos)
+        end_pos = np.array(end_cartesian_pos)
+
+        # 시간 지점 생성
+        num_points = int(time_to_go / self.time_step) + 1
+        time_points = np.linspace(0, time_to_go, num_points)
+
+        # Cartesian 궤적을 위한 배열 초기화
+        cartesian_trajectory = np.zeros((num_points, 3))
+
+        # 각 축(x, y, z)에 대해 3차 다항식 보간을 사용하여 궤적 생성
+        for i in range(3):
+            for j, t in enumerate(time_points):
+                cartesian_trajectory[j, i] = self._cubic_interpolation(
+                    t, time_to_go, start_pos[i], end_pos[i]
+                )
+        
+        return {
+            'cartesian_points': cartesian_trajectory,
+            'time_points': time_points
+        }
+
     def get_trajectory(self):
         """Get the planned trajectory in radians"""
         return self.trajectory

@@ -32,8 +32,7 @@ class KinematicSolver:
         self.L2 = 10.0        # 상완 길이
         self.L3 = 7.0          # 상완-하완 링크 길이
         self.L4 = 10.0        # 하완 길이 
-        self.ee_length = 17.0     # 연필 길이
-        # 연필 = 17cm
+        self.L5 = 17.0        # 연필 길이
         
         # 호환성을 위한 속성
         self.num_motor_variables = 4
@@ -41,18 +40,11 @@ class KinematicSolver:
         
         print(f"✅ 기하학적 운동학 해결기 초기화:")
         print(f"   베이스: {self.L1}cm, 상완: {self.L2}cm")
-        print(f"   하완: {self.L4}cm, 손목: {self.ee_length}cm")
+        print(f"   하완: {self.L4}cm, 손목: {self.L5}cm")
 
     def forward_kinematics(self, joint_angles):
         """
         순운동학: 관절 각도 → 엔드이펙터 위치
-        
-        올바른 기하학적 해법:
-        - Joint 0: 베이스 회전 (theta_0)
-        - Joint 1: theta_alpha + theta_beta  
-        - Joint 2: theta_alpha - theta_beta
-        - 수평거리: 30*cos(theta_alpha)*cos(theta_beta) + 10.7 (cm)
-        - Z좌표: 17 + 30*sin(theta_alpha)*cos(theta_beta) (cm)
         
         Args:
             joint_angles: [theta0, theta1, theta2, theta3] (라디안)
@@ -61,33 +53,28 @@ class KinematicSolver:
             position: [x, y, z] (cm)
             orientation: [roll, pitch, yaw] (라디안)
         """
-        theta_0 = joint_angles[0]  # 베이스 회전
-        theta_1 = joint_angles[1]  # theta_alpha + theta_beta
-        theta_2 = joint_angles[2]  # theta_alpha - theta_beta
-        theta_3 = joint_angles[3]  # 손목 회전
+        theta_0, theta_1, theta_2, _ = joint_angles
+
+        # 수평 거리(r) 계산
+        # 팔 링크(L2, L4)와 오프셋(L3)을 고려
+        r = self.L2 * np.cos(theta_1) + self.L4 * np.cos(theta_2) + self.L3
         
-        # 올바른 공식에 따른 계산
-        theta_alpha = (theta_1 + theta_2) / 2
-        theta_beta = (theta_1 - theta_2) / 2
+        # Z 좌표 계산
+        # 베이스 높이(L1), 팔 링크(L2, L4) 고려
+        z = self.L1 + self.L2 * np.sin(theta_1) + self.L4 * np.sin(theta_2)
         
-        # 수평 거리 계산: 30*cos(theta_alpha)*cos(theta_beta) + 10.7
-        r = 30.0 * np.cos(theta_alpha) * np.cos(theta_beta) + 10.7
-        
-        # Z 좌표 계산: 17 + 30*sin(theta_alpha)*cos(theta_beta)
-        z = 17.0 + 30.0 * np.sin(theta_alpha) * np.cos(theta_beta)
-        
-        # 베이스 회전 적용
+        # 베이스 회전 적용하여 X, Y 좌표 계산
         x = r * np.cos(theta_0)
         y = r * np.sin(theta_0)
         
         position = np.array([x, y, z])
         
-        # 간단한 자세 (팔 방향)
-        orientation = np.array([0, theta_1, theta_0])
+        # 간단한 자세 (팔의 끝 각도와 베이스 회전)
+        orientation = np.array([0, theta_1 + theta_2, theta_0])
         
         return position, orientation
     
-    def inverse_kinematics(self, target_position, **kwargs):
+    def inverse_kinematics(self, target_position, initial_guess_joints=None, **kwargs):
         """
         역운동학: 목표 위치 → 관절 각도
         
@@ -117,21 +104,28 @@ class KinematicSolver:
                 return [eq1, eq2]
             
             # 초기 추정값
-            initial_guess = [0, 0]
+            if initial_guess_joints is not None and len(initial_guess_joints) >= 3:
+                # 이전 해에서 fsolve를 위한 초기 추정값 변환
+                th_1_guess, th_2_guess = initial_guess_joints[1], initial_guess_joints[2]
+                theta1_sol_guess = np.pi / 2.0 - th_1_guess
+                theta2_sol_guess = th_2_guess + np.pi / 2.0
+                initial_guess = [theta1_sol_guess, theta2_sol_guess]
+            else:
+                initial_guess = [0, 0]
             
             # 수치 해 찾기
             solution = fsolve(equations, initial_guess)
             theta1_sol, theta2_sol = solution
             
             th_z = np.arctan2(y,x)
-            th_0 = self._normalize_angle(th_z)
-            th_1 = self._normalize_angle(np.pi/2 - theta1_sol)
-            th_2 = self._normalize_angle(-(np.pi/2) + theta2_sol)
+            th_0 = self.normalize_angle(th_z)
+            th_1 = self.normalize_angle(np.pi/2 - theta1_sol)
+            th_2 = self.normalize_angle(-(np.pi/2) + theta2_sol)
             
-            th_3 = self._normalize_angle(np.pi/2)
+            th_3 = self.normalize_angle(np.pi/2)
             
-            # 뒤집어진 solve 결과 변환
-            if th_1 < 0 and th_2 > 0:
+            # 뒤집어진 solve 결과 변환 + 앞발이 많이 올라가는 동작 방지
+            if (th_1 < 0 and th_2 > 0) or (th_1 < th_2):
                 temp = th_1
                 th_1 = th_2
                 th_2 = temp
@@ -139,7 +133,7 @@ class KinematicSolver:
             # 1번째 관절 뒤로 넘어가려는거 제한
             if th_1 > 1.7:
                 th_1 = 1.7
-            
+           
             joint_angles = np.array([th_0, th_1, th_2, th_3])
             
             print("joint_angles: ", joint_angles)
@@ -219,7 +213,7 @@ class KinematicSolver:
         theta2 = theta_alpha - theta_beta
         return theta1, theta2
 
-    def _normalize_angle(self, angle):
+    def normalize_angle(self, angle):
         """각도를 -π ~ π 범위로 정규화 (래핑)"""
         # 모듈로 연산을 사용한 효율적인 방법
         return ((angle + np.pi) % (2 * np.pi)) - np.pi

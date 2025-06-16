@@ -28,6 +28,7 @@ if parent_dir not in sys.path:
 
 from dynamixel_sdk.controllerXC import *
 from dynamixel_sdk.controllerAX import *
+from dynamixel_sdk import packet_handler
 from stand_like_robot.kinematic_solver import *
 from motor_controller.mock_motor_controller import MockMotorController
 from motor_controller.real_motor_controller import RealMotorController
@@ -40,12 +41,14 @@ class StandLikeRobot:
         metadata_path=None,
         simulation_mode=False,
         port_address='/dev/cu.usbserial-FT8ISMU2',
-        dual_mode=False  # 새로운 옵션: 시뮬레이션 + 실제 로봇 동시 사용
+        dual_mode=False,  # 새로운 옵션: 시뮬레이션 + 실제 로봇 동시 사용
+        packet_handler=None
     ):
         """로봇 초기화"""
         self.simulation_mode = simulation_mode
         self.dual_mode = dual_mode  # 시뮬레이션과 실제 로봇 동시 사용 여부
         self.port_handler = PortHandler(port_address) if (not simulation_mode or dual_mode) else None
+        self.packet_handler = packet_handler
         
         # 기본 메타데이터 경로 설정
         if metadata_path is None:
@@ -254,9 +257,9 @@ class StandLikeRobot:
             motor_info = motor[motor_name]
             
             controller = RealMotorController(
-                self.port_handler, 
-                1000000,  # baudrate 추가
-                motor_info, 
+                port_handler=self.port_handler,
+                baudrate=1000000,
+                motor_info=motor_info,
                 motor_type=motor_type,
                 safe_init=True,
                 hw_initial_rad=hw_initial_rads[i],
@@ -271,6 +274,9 @@ class StandLikeRobot:
             raise Exception("포트 열기 실패")
         if not self.port_handler.setBaudRate(115200):
             raise Exception("보드레이트 설정 실패")
+        
+        # 프로토콜 버전 2.0을 위한 패킷 핸들러 초기화
+        self.packet_handler = packet_handler.PacketHandler(2.0)
     
     def _print_calibration_info(self, arm_controllers, gripper_controllers, prefix=""):
         """캘리브레이션 정보 출력"""
@@ -285,26 +291,29 @@ class StandLikeRobot:
 
     ######## Arm Movement ########
     # 1-1. Inverse Kinematicss
-    def move_to_cartesian_position(self, target_position, time_to_go=2.0, respect_hw_limits=True):
+    def move_to_cartesian_position(self, target_position, time_to_go=2.0, respect_hw_limits=True, use_cartesian_interpolation=True):
         """직교좌표 위치로 이동 (팔만)"""
         try:
-            # KinematicSolver의 역운동학 사용
-            solution_radians = self.kinematic_solver.inverse_kinematics(target_position)
-            
-            if solution_radians is not None:
-                # 관절 제한 확인 (옵션)
-                if respect_hw_limits:
-                    violations = self.kinematic_solver.check_joint_limits(solution_radians, self.joint_limits_rad)
-                    if violations:
-                        print(f"⚠️ 관절 제한 위반: {violations}")
-                        print("💡 제한 무시하고 실행하려면 respect_hw_limits=False 사용")
-                        return
+            if use_cartesian_interpolation:
+                self.move_arm_to_cartesian_interpolation(target_position, time_to_go)
+            else: 
+                # KinematicSolver의 역운동학 사용
+                solution_radians = self.kinematic_solver.inverse_kinematics(target_position)
                 
-                # 관절 각도로 이동
-                self.move_arm_to_joint_radians(solution_radians, time_to_go)
-                print("✅ 직교좌표 이동 완료")
-            else:
-                print("❌ 역운동학 해가 없습니다 (도달 불가능한 위치)")
+                if solution_radians is not None:
+                    # 관절 제한 확인 (옵션)
+                    if respect_hw_limits:
+                        violations = self.kinematic_solver.check_joint_limits(solution_radians, self.joint_limits_rad)
+                        if violations:
+                            print(f"⚠️ 관절 제한 위반: {violations}")
+                            print("💡 제한 무시하고 실행하려면 respect_hw_limits=False 사용")
+                            return
+                    
+                    # 관절 각도로 이동
+                    self.move_arm_to_joint_radians(solution_radians, time_to_go)
+                    print("✅ 직교좌표 이동 완료")
+                else:
+                    print("❌ 역운동학 해가 없습니다 (도달 불가능한 위치)")
             
         except Exception as e:
             print(f"❌ 직교좌표 이동 오류: {e}")
@@ -326,6 +335,62 @@ class StandLikeRobot:
         
         print(f"✅ 초기 위치 설정 완료: {degrees} 도")
 
+    # 2. Cartesian Movement
+    def move_arm_to_cartesian_interpolation(self, target_cartesian_position, time_to_go=2.0):
+        """
+        직선 경로를 따라 팔을 이동 (Cartesian 공간 보간)
+        
+        Args:
+            target_cartesian_position: 목표 직교좌표 위치 (cm)
+            time_to_go: 이동 시간 (초)
+        """
+        # 1. 현재 직교좌표 위치와 관절 각도 가져오기
+        current_joints = self.get_current_arm_joint_radians()
+        start_cartesian_pos, _ = self.kinematic_solver.forward_kinematics(current_joints)
+        
+        print(f"🛤️ Cartesian 공간 보간 이동:")
+        print(f"   시작: {np.round(start_cartesian_pos, 2)} cm")
+        print(f"   목표: {np.round(target_cartesian_position, 2)} cm")
+        print(f"   시간: {time_to_go:.1f}초")
+
+        # 2. Cartesian 궤적 계획
+        try:
+            cartesian_result = self.trajectory_planner.plan_cartesian(
+                start_cartesian_pos=start_cartesian_pos,
+                end_cartesian_pos=target_cartesian_position,
+                time_to_go=time_to_go
+            )
+        except Exception as e:
+            print(f"❌ Cartesian 궤적 계획 오류: {e}")
+            return
+
+        cartesian_points = cartesian_result['cartesian_points']
+        time_points = cartesian_result['time_points']
+
+        # 3. 전체 궤적에 대한 관절 각도 계산 (IK 사용)
+        joint_trajectory = []
+        orientation_joint = current_joints[3] if len(current_joints) > 3 else 0.0
+        
+        for i, point in enumerate(cartesian_points):
+            # 각 지점에 대해 IK 계산
+            joint_angles_3dof = self.kinematic_solver.inverse_kinematics(point)
+            
+            if joint_angles_3dof is None:
+                print(f"❌ 궤적 생성 중단: 지점 {i+1}에서 IK 해를 찾을 수 없습니다.")
+                return
+            
+            # 방향을 유지하며 완전한 관절 각도 생성
+            full_joint_angles = np.append(joint_angles_3dof[:3], orientation_joint)
+            joint_trajectory.append(full_joint_angles)
+            
+        # 4. 계산된 관절 궤적 실행
+        trajectory_result = {
+            'radians': np.array(joint_trajectory),
+            'time_points': time_points
+        }
+        self._execute_trajectory(trajectory_result)
+        print("✅ Cartesian 보간 이동 완료")
+    
     # 2. Joint Movement
     def move_arm_to_joint_radians(self, target_joint_radians, time_to_go=2.0):
         """
@@ -532,9 +597,25 @@ class StandLikeRobot:
         else:
             return 0.0
 
-    def move_to_position_with_orientation(self, target_position, z_rotation_deg=0, time_to_go=2.0):
+    def gravity_compensation(self, target_position):
+        """
+        중력 보상 기능
+        """
+
+        print('중력 보상')
+        target_position = [target_position[0], target_position[1], target_position[2] + ((((np.sqrt(target_position[0]**2 + target_position[1]**2)-7)/20)**2)*2.4+0.8)]
+        
+        return target_position
+
+    def move_to_position_with_orientation(self, target_position, z_rotation_deg=0, time_to_go=2.0, use_cartesian_interpolation=True):
         """위치와 orientation을 함께 제어하는 통합 함수"""
         print(f"🎯 목표: 위치{target_position}, 회전{z_rotation_deg}°")
+
+        target_position = self.gravity_compensation(target_position)
+
+        if use_cartesian_interpolation:
+            self.move_to_position_with_orientation_interpolation(target_position, z_rotation_deg, time_to_go)
+            return
         
         # 역운동학으로 0~2번 관절 계산
         try:
@@ -555,6 +636,87 @@ class StandLikeRobot:
         except Exception as e:
             print(f"❌ 위치+회전 이동 오류: {e}")
 
+    def move_to_position_with_orientation_interpolation(self, target_position, z_rotation_deg, time_to_go):
+        """
+        직선 경로와 함께 Z축 회전을 보간하여 이동
+        
+        Args:
+            target_position (list): 목표 직교좌표 위치 (cm)
+            z_rotation_deg (float): 목표 Z축 회전 각도 (도)
+            time_to_go (float): 이동 시간 (초)
+        """
+        # 1. 현재 상태 가져오기
+        current_joints = self.get_current_arm_joint_radians()
+        start_cartesian_pos, _ = self.kinematic_solver.forward_kinematics(current_joints)
+        start_z_rotation_rad = current_joints[3] if len(current_joints) > 3 else 0.0
+        target_z_rotation_rad = np.deg2rad(z_rotation_deg)
+
+        print(f"🛤️ Cartesian 공간 보간 이동 (위치+회전):")
+        print(f"   시작 위치: {np.round(start_cartesian_pos, 2)} cm, 회전: {np.rad2deg(start_z_rotation_rad):.1f}°")
+        print(f"   목표 위치: {np.round(target_position, 2)} cm, 회전: {z_rotation_deg:.1f}°")
+        print(f"   시간: {time_to_go:.1f}초")
+
+        # 2. Cartesian 위치 궤적 계획
+        try:
+            cartesian_result = self.trajectory_planner.plan_cartesian(
+                start_cartesian_pos=start_cartesian_pos,
+                end_cartesian_pos=target_position,
+                time_to_go=time_to_go
+            )
+        except Exception as e:
+            print(f"❌ Cartesian 궤적 계획 오류: {e}")
+            return
+
+        cartesian_points = cartesian_result['cartesian_points']
+        time_points = cartesian_result['time_points']
+        num_points = len(time_points)
+
+        # 3. Z축 회전 궤적 계획 (선형 보간)
+        orientation_trajectory = np.linspace(start_z_rotation_rad, target_z_rotation_rad, num_points)
+
+        # 4. 전체 궤적에 대한 관절 각도 계산
+        joint_trajectory = []
+        last_known_joints = current_joints
+
+        for i, point in enumerate(cartesian_points):
+            # 각 지점에 대해 IK 계산, 이전 해를 초기 추정값으로 사용
+            joint_angles_3dof = self.kinematic_solver.inverse_kinematics(
+                point,
+                initial_guess_joints=last_known_joints
+            )
+            
+            # 새 관절 각도 결정
+            if joint_angles_3dof is None:
+                # IK 실패 시 이전 값 사용
+                print(f"⚠️ 지점 {i+1}에서 IK 해 없음, 이전 값 사용.")
+                full_joint_angles = np.append(last_known_joints[:3], orientation_trajectory[i])
+            else:
+                # IK 성공, 점프 확인
+                new_full_joints = np.append(joint_angles_3dof[:3], orientation_trajectory[i])
+                
+                # 첫 번째 지점 이후부터 점프 확인
+                if i > 0:
+                    angle_diff = np.abs(self.kinematic_solver.normalize_angle(new_full_joints - last_known_joints))
+                    # 30도(0.52 라디안) 이상 변하면 점프로 간주
+                    jump_threshold = np.deg2rad(30.0)
+                    if np.any(angle_diff[:3] > jump_threshold): # 회전(joint 3)은 제외
+                        print(f"⚠️ 지점 {i+1}에서 관절 값 튐 현상 감지. 이전 값 사용.")
+                        full_joint_angles = np.append(last_known_joints[:3], orientation_trajectory[i])
+                    else:
+                        full_joint_angles = new_full_joints
+                else:
+                    full_joint_angles = new_full_joints
+
+            joint_trajectory.append(full_joint_angles)
+            last_known_joints = full_joint_angles
+        
+        # 5. 계산된 관절 궤적 실행
+        trajectory_result = {
+            'radians': np.array(joint_trajectory),
+            'time_points': time_points
+        }
+        self._execute_trajectory(trajectory_result)
+        print("✅ 위치+회전 Cartesian 보간 이동 완료")
 
     ######## Gripper Control ########
     def open_gripper(self, time_to_go=1.0):

@@ -220,6 +220,7 @@ class CircleDrawerGUI:
 
         target = self.circle_points[self.cur_idx]
         if self.cur_idx == 0:
+            self.sim.move_end_effector([target[0], target[1], target[2] + 3], time_to_go=1.5)
             self.sim.move_end_effector(target, time_to_go=1.5)
         else:
             self.sim.move_end_effector(target, time_to_go=self.ms_per_step / 1000.0)

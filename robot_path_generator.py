@@ -21,6 +21,7 @@ def generate_robot_path(
     path = []
     
     l1 = l1 + reach_offset
+    l2 = l2 + reach_offset
     
     # 몸통 돌려서 서랍 열기
     path.extend([
@@ -34,56 +35,54 @@ def generate_robot_path(
             "type": "move",
             "pos": [8.74 * np.cos(theta2), 8.74 * np.sin(theta2), 17],
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
         },
         {
             "id": 2,
             "type": "move",
-            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 25+object2_offset],
-            "rot": 0,
-            "time": time_to_go
-        },
-        {
-            "id": 3,
-            "type": "move",
-            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 22+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 25+object2_offset],
             "rot": 0,
             "time": time_to_go
         },
         {
             "id": 4,
             "type": "move", 
-            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 17.5+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 17+object2_offset],
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 5.1,
             "type": "move",
-            "pos": [(l2-4) * np.cos(theta2), (l2-4) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-4) * np.cos(theta2), (l2-4) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 5.2,
             "type": "move",
-            "pos": [(l2-6) * np.cos(theta2), (l2-6) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-6) * np.cos(theta2), (l2-6) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 5.3,
             "type": "move",
             "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 6,
             "type": "move",
             "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 22+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 7,
@@ -153,7 +152,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [drawer_x1, drawer_y1, 19+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 15,
@@ -213,7 +213,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 19+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 23,
@@ -276,7 +277,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [drawer_x3, drawer_y3, 19+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 31,
@@ -307,18 +309,33 @@ def generate_robot_path(
             "time": time_to_go
         },
         {
-            "id": 35,
+            "id": 35.1,
             "type": "move",
-            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 18.5+object2_offset],
+            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 18+object2_offset],
+            "rot": 90,
+            "time": time_to_go
+        },
+        {
+            "id": 35.2,
+            "type": "move",
+            "pos": [(l2-5) * np.cos(theta2), (l2-5) * np.sin(theta2), 18+object2_offset],
+            "rot": 90,
+            "time": time_to_go
+        },
+        {
+            "id": 35.3,
+            "type": "move",
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 18+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 36,
             "type": "move",
-            "pos": [(l2+0.5) * np.cos(theta2), (l2+0.5) * np.sin(theta2), 18.5+object2_offset],
+            "pos": [(l2+0.5) * np.cos(theta2), (l2+0.5) * np.sin(theta2), 18+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 37,
@@ -374,7 +391,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 45,
@@ -430,7 +448,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 53,
@@ -486,7 +505,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 61,
@@ -542,7 +562,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 69,
@@ -598,7 +619,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 77,
@@ -654,7 +676,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 85,
@@ -709,10 +732,10 @@ def main():
     theta1_rad = np.radians(args.theta1)
     theta2_rad = np.radians(args.theta2)
     
-    OBJECT1_OFFSET = -7
-    OBJECT2_OFFSET = 0
+    OBJECT1_OFFSET = -6.5
+    OBJECT2_OFFSET = 1
     
-    REACH_OFFSET = 1.5
+    REACH_OFFSET = 1
     
     if args.output is None:
         args.output = f"robot_path_{int(args.theta1)}_{int(args.l1)}_{int(args.theta2)}_{int(args.l2)}_{args.time_to_go}_{OBJECT1_OFFSET}_{OBJECT2_OFFSET}_{REACH_OFFSET}.json"
@@ -733,7 +756,7 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) == 1:
         print("Example usage:")
-        print("python robot_path_generator.py 45 25 90 30 1.5")
+        print("python robot_path_generator.py 45 25 90 30 1.0")
         print("\nRunning with example values: theta1=45°, l1=25, theta2=90°, l2=30, time_to_go=1.5")
         
         # 예시 값으로 실행
