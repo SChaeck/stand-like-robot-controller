@@ -79,15 +79,15 @@ class CircleDrawerGUI:
 
     # ------------------------------------------------------------------ UI --
     def _init_gui(self):
-        self.fig = plt.figure(figsize=(14, 8))
+        self.fig = plt.figure(figsize=(14, 10))
         self.ax_3d = self.fig.add_subplot(121, projection="3d")
 
         # ----------------------- Input widgets ------------------------
         panel_left = 0.70
         width = 0.25
-        height = 0.04
-        v_gap = 0.05
-        y = 0.90
+        height = 0.035  # slightly shorter buttons
+        v_gap = 0.045   # tighter vertical gap
+        y = 0.95        # start higher so more room downward
 
         # Center X,Y,Z
         self.fig.text(panel_left, y, "Center (cm)", weight="bold")
@@ -103,6 +103,22 @@ class CircleDrawerGUI:
         self.fig.text(panel_left, y, "Radius (cm)", weight="bold")
         y -= v_gap
         self.box_radius = TextBox(self._ax(panel_left, y, width, height), "r", initial="5")
+
+        # ---------------- Circle 2 -----------------
+        y -= v_gap * 1.5
+        self.fig.text(panel_left, y, "Circle 2 Center (cm)", weight="bold")
+        y -= v_gap
+        self.box2_x = TextBox(self._ax(panel_left, y, width, height), "X2", initial="-25")
+        y -= v_gap
+        self.box2_y = TextBox(self._ax(panel_left, y, width, height), "Y2", initial="0")
+        y -= v_gap
+        self.box2_z = TextBox(self._ax(panel_left, y, width, height), "Z2", initial="20")
+
+        # Radius 2
+        y -= v_gap
+        self.fig.text(panel_left, y, "Radius 2 (cm)", weight="bold")
+        y -= v_gap
+        self.box2_radius = TextBox(self._ax(panel_left, y, width, height), "r2", initial="5")
 
         # Number of points
         y -= v_gap
@@ -153,19 +169,34 @@ class CircleDrawerGUI:
     # ---------------------------------------------------------------- Events --
     def _on_generate(self, _event):
         try:
+            # Circle 1
             cx = float(self.box_x.text)
             cy = float(self.box_y.text)
             cz = float(self.box_z.text)
             r = float(self.box_radius.text)
+
+            # Circle 2
+            cx2 = float(self.box2_x.text)
+            cy2 = float(self.box2_y.text)
+            cz2 = float(self.box2_z.text)
+            r2 = float(self.box2_radius.text)
+
             n = int(self.box_pts.text)
             n = max(3, min(200, n))
             plane_idx = int(self.slider_plane.val)
             plane = ("xy", "xz", "yz")[plane_idx]
 
-            self.circle_points = compute_circle_points((cx, cy, cz), r, n, plane)
+            circle1 = compute_circle_points((cx, cy, cz), r, n, plane)
+            circle2 = compute_circle_points((cx2, cy2, cz2), r2, n, plane)
+
+            # Store length of first circle to detect transition later
+            self.circle1_len = len(circle1)
+
+            # Concatenate (remove duplicate starting point of second circle)
+            self.circle_points = np.vstack([circle1, circle2])
             self.cur_idx = 0
             self.is_animating = False
-            self.txt_status.set_text(f"Circle generated: {n} pts on {plane.upper()} plane.")
+            self.txt_status.set_text(f"Two circles generated: {len(self.circle_points)} pts total on {plane.upper()} plane.")
 
             # Visualise
             self._update_visual(show_circle=True)
@@ -219,7 +250,9 @@ class CircleDrawerGUI:
             return
 
         target = self.circle_points[self.cur_idx]
-        if self.cur_idx == 0:
+        # Lift pen when starting first circle or transitioning to second circle
+        if self.cur_idx == 0 or (
+            hasattr(self, 'circle1_len') and self.cur_idx == self.circle1_len):
             self.sim.move_end_effector([target[0], target[1], target[2] + 3], time_to_go=1.5)
             self.sim.move_end_effector(target, time_to_go=1.5)
         else:
