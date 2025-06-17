@@ -40,7 +40,7 @@ class StandLikeRobot:
         self, 
         metadata_path=None,
         simulation_mode=False,
-        port_address='/dev/cu.usbserial-FT8ISMU2',
+        port_address='/dev/ttyUSB0',
         dual_mode=False,  # 새로운 옵션: 시뮬레이션 + 실제 로봇 동시 사용
         packet_handler=None
     ):

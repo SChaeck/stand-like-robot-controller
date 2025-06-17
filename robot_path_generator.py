@@ -55,7 +55,7 @@ def generate_robot_path(
         {
             "id": 5.1,
             "type": "move",
-            "pos": [(l2-4) * np.cos(theta2), (l2-4) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-6) * np.cos(theta2), (l2-6) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -63,7 +63,7 @@ def generate_robot_path(
         {
             "id": 5.2,
             "type": "move",
-            "pos": [(l2-6) * np.cos(theta2), (l2-6) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-9) * np.cos(theta2), (l2-9) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -71,7 +71,7 @@ def generate_robot_path(
         {
             "id": 5.3,
             "type": "move",
-            "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 17.5+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-(8+2)) * np.cos(theta2), (l2-(8+2)) * np.sin(theta2), 17+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -79,13 +79,20 @@ def generate_robot_path(
         {
             "id": 6,
             "type": "move",
-            "pos": [(l2-(8+1)) * np.cos(theta2), (l2-(8+1)) * np.sin(theta2), 22+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
+            "pos": [(l2-(8+2)) * np.cos(theta2), (l2-(8+2)) * np.sin(theta2), 22+object2_offset], # [temp] 8 + `1`(충분히 열기 위한 추가 힘)
             "rot": 0,
             "time": time_to_go,
             "use_cartesian_interpolation": True
         },
         {
             "id": 7,
+            "type": "move",
+            "pos": [l2 * np.cos(theta2), l2 * np.sin(theta2), 27+object2_offset],
+            "rot": 0,
+            "time": time_to_go
+        },
+        {
+            "id": 7.7,
             "type": "move",
             "pos": [l2 * np.cos(theta2), l2 * np.sin(theta2), 27+object2_offset],
             "rot": 0,
@@ -174,14 +181,14 @@ def generate_robot_path(
         {
             "id": 17,
             "type": "move",
-            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 32.5+object1_offset],
+            "pos": [(l1+5.75) * np.cos(theta1), (l1+5.75) * np.sin(theta1), 32.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 18,
             "type": "move",
-            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 29+object1_offset],
+            "pos": [(l1+5.75) * np.cos(theta1), (l1+5.75) * np.sin(theta1), 29+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -193,9 +200,10 @@ def generate_robot_path(
         {
             "id": 20,
             "type": "move",
-            "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 33+object1_offset],
+            "pos": [(l1+3.75) * np.cos(theta1), (l1+3.75) * np.sin(theta1), 33+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         }
     ])
     
@@ -224,7 +232,7 @@ def generate_robot_path(
         {
             "id": 24,
             "type": "move",
-            "pos": [(l2-3) * np.cos(theta2), (l2-3) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2-2) * np.cos(theta2), (l2-2) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -256,7 +264,8 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 33+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         }
     ])
     
@@ -304,14 +313,14 @@ def generate_robot_path(
         {
             "id": 34,
             "type": "move",
-            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 22+object2_offset],
+            "pos": [(l2-9) * np.cos(theta2), (l2-9) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 35.1,
             "type": "move",
-            "pos": [(l2-8) * np.cos(theta2), (l2-8) * np.sin(theta2), 18+object2_offset],
+            "pos": [(l2-9) * np.cos(theta2), (l2-9) * np.sin(theta2), 18+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -363,7 +372,7 @@ def generate_robot_path(
         {
             "id": 40,
             "type": "move",
-            "pos": [(l1+3.5) * np.cos(theta1), (l1+3.5) * np.sin(theta1), 26.5+object1_offset],
+            "pos": [(l1+4.5) * np.cos(theta1), (l1+4.5) * np.sin(theta1), 26.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -375,21 +384,22 @@ def generate_robot_path(
         {
             "id": 42,
             "type": "move",
-            "pos": [(l1+3.5) * np.cos(theta1), (l1+3.5) * np.sin(theta1), 30.5+object1_offset],
+            "pos": [(l1+4) * np.cos(theta1), (l1+4) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 43,
             "type": "move",
-            "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 26+object2_offset],
+            "pos": [(l2+7) * np.cos(theta2), (l2+7) * np.sin(theta2), 26+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 44,
             "type": "move",
-            "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 22+object2_offset],
+            "pos": [(l2+7) * np.cos(theta2), (l2+7) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -402,7 +412,7 @@ def generate_robot_path(
         {
             "id": 46,
             "type": "move",
-            "pos": [(l2+7.5) * np.cos(theta2), (l2+7.5) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2+7) * np.cos(theta2), (l2+7) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -420,7 +430,7 @@ def generate_robot_path(
         {
             "id": 48,
             "type": "move",
-            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 26.5+object1_offset],
+            "pos": [(l1+6.5) * np.cos(theta1), (l1+6.5) * np.sin(theta1), 26.5+object1_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -432,21 +442,22 @@ def generate_robot_path(
         {
             "id": 50,
             "type": "move",
-            "pos": [(l1+6) * np.cos(theta1), (l1+6) * np.sin(theta1), 30.5+object1_offset],
+            "pos": [(l1+5.5) * np.cos(theta1), (l1+5.5) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 51,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 26+object2_offset],
+            "pos": [(l2+4.3) * np.cos(theta2), (l2+4.3) * np.sin(theta2), 26+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 52,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 22+object2_offset],
+            "pos": [(l2+4.3) * np.cos(theta2), (l2+4.3) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -491,19 +502,20 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l1+8.5) * np.cos(theta1), (l1+8.5) * np.sin(theta1), 30.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 59,
             "type": "move",
-            "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 26+object2_offset],
+            "pos": [(l2+1.6) * np.cos(theta2), (l2+1.6) * np.sin(theta2), 26+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 60,
             "type": "move",
-            "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 22+object2_offset],
+            "pos": [(l2+1.6) * np.cos(theta2), (l2+1.6) * np.sin(theta2), 22+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -516,7 +528,7 @@ def generate_robot_path(
         {
             "id": 62,
             "type": "move",
-            "pos": [(l2+2.5) * np.cos(theta2), (l2+2.5) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2+1.6) * np.cos(theta2), (l2+1.6) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -546,21 +558,22 @@ def generate_robot_path(
         {
             "id": 66,
             "type": "move",
-            "pos": [(l1+2.25) * np.cos(theta1), (l1+2.25) * np.sin(theta1), 27.5+object1_offset],
+            "pos": [(l1+1.25) * np.cos(theta1), (l1+1.25) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 67,
             "type": "move",
-            "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 28.5+object2_offset],
+            "pos": [(l2+5.7) * np.cos(theta2), (l2+5.7) * np.sin(theta2), 28.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 68,
             "type": "move",
-            "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 24.5+object2_offset],
+            "pos": [(l2+5.7) * np.cos(theta2), (l2+5.7) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -573,7 +586,7 @@ def generate_robot_path(
         {
             "id": 70,
             "type": "move",
-            "pos": [(l2+6.25) * np.cos(theta2), (l2+6.25) * np.sin(theta2), 28.5+object2_offset],
+            "pos": [(l2+5.7) * np.cos(theta2), (l2+5.7) * np.sin(theta2), 28.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -605,19 +618,20 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l1+4.75) * np.cos(theta1), (l1+4.75) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 75,
             "type": "move",
-            "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 28.5+object2_offset],
+            "pos": [(l2+3.1) * np.cos(theta2), (l2+3.1) * np.sin(theta2), 28.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 76,
             "type": "move",
-            "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 24.5+object2_offset],
+            "pos": [(l2+3.1) * np.cos(theta2), (l2+3.1) * np.sin(theta2), 24.5+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -630,7 +644,7 @@ def generate_robot_path(
         {
             "id": 78,
             "type": "move",
-            "pos": [(l2+3.75) * np.cos(theta2), (l2+3.75) * np.sin(theta2), 28.5+object2_offset],
+            "pos": [(l2+3.1) * np.cos(theta2), (l2+3.1) * np.sin(theta2), 28.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         }
@@ -662,19 +676,20 @@ def generate_robot_path(
             "type": "move",
             "pos": [(l1+7.25) * np.cos(theta1), (l1+7.25) * np.sin(theta1), 27.5+object1_offset],
             "rot": 90,
-            "time": time_to_go
+            "time": time_to_go,
+            "use_cartesian_interpolation": True
         },
         {
             "id": 83,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 29.5+object2_offset],
+            "pos": [(l2+4.4) * np.cos(theta2), (l2+4.4) * np.sin(theta2), 29.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
         {
             "id": 84,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 27+object2_offset],
+            "pos": [(l2+4.4) * np.cos(theta2), (l2+4.4) * np.sin(theta2), 27+object2_offset],
             "rot": 90,
             "time": time_to_go,
             "use_cartesian_interpolation": True
@@ -687,7 +702,14 @@ def generate_robot_path(
         {
             "id": 84,
             "type": "move",
-            "pos": [(l2+5) * np.cos(theta2), (l2+5) * np.sin(theta2), 29.5+object2_offset],
+            "pos": [(l2+4.4) * np.cos(theta2), (l2+4.4) * np.sin(theta2), 29.5+object2_offset],
+            "rot": 90,
+            "time": time_to_go
+        },
+        {
+            "id": 84.1,
+            "type": "move",
+            "pos": [(l2+4.4), 0, 29.5+object2_offset],
             "rot": 90,
             "time": time_to_go
         },
@@ -733,7 +755,7 @@ def main():
     theta2_rad = np.radians(args.theta2)
     
     OBJECT1_OFFSET = -6.5
-    OBJECT2_OFFSET = 1
+    OBJECT2_OFFSET = 0
     
     REACH_OFFSET = 1
     
